@@ -196,6 +196,7 @@ btree_process_node(btree_definition_tree_data_t *struct_tree,
         clear_index += 1;
       } while (clear_index < node_struct->decorator_node.node_limit);
 
+      struct_tree->last_node_state = BTREE_DEFINITION_STATUS_RUNNING;
       return BTREE_DEFINITION_STATUS_RUNNING;
     } else {
       status = struct_tree->last_node_state;
