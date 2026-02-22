@@ -265,7 +265,7 @@ const btree_definition_node_t btree_main_array[BTREE_MAIN_ARRAY_SIZE] =
  */
 btree_definition_tree_data_t btree_main_control = {
     .last_node_state = BTREE_DEFINITION_STATUS_RUNNING,
-    .node_index      = BTREE_DEFINITON_NODE_FIRST_INDEX,
+    .node_index      = BTREE_DEFINITION_NODE_FIRST_INDEX,
     .tree_size       = BTREE_MAIN_ARRAY_SIZE,
     .nodes_status    = btree_main_status_nodes,
     .array_attempts  = btree_main_common_attempts,

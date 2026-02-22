@@ -41,7 +41,7 @@ const btree_definition_node_t btree_example_array[BTREE_EXAMPLE_ARRAY_SIZE] =
  */
 btree_definition_tree_data_t btree_example_control = {
     .last_node_state = BTREE_DEFINITION_STATUS_RUNNING,
-    .node_index      = BTREE_DEFINITON_NODE_FIRST_INDEX,
+    .node_index      = BTREE_DEFINITION_NODE_FIRST_INDEX,
     .tree_size       = BTREE_EXAMPLE_ARRAY_SIZE,
     .nodes_status    = btree_example_status_nodes,
     .array_attempts  = btree_example_common_attempts,

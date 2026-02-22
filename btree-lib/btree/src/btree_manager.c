@@ -64,7 +64,7 @@ btree_manager_reactivity_tick_tree(btree_definition_tree_data_t *struct_tree) {
   uint32_t mask = 0;
   uint32_t value_updated = 0;
   uint32_t value_status =
-      struct_tree->nodes_status[BTREE_DEFINITON_NODE_FIRST_INDEX];
+      struct_tree->nodes_status[BTREE_DEFINITION_NODE_FIRST_INDEX];
 
   if (struct_tree == NULL) {
     return BTREE_DEFINITION_STATUS_ERROR;
@@ -162,7 +162,7 @@ btree_manager_reset_tree(btree_definition_tree_data_t *struct_tree) {
   }
 
   struct_tree->last_node_state = BTREE_DEFINITION_STATUS_RUNNING;
-  struct_tree->node_index = BTREE_DEFINITON_NODE_FIRST_INDEX;
+  struct_tree->node_index = BTREE_DEFINITION_NODE_FIRST_INDEX;
 
   return BTREE_DEFINITION_STATUS_SUCCESS;
 }

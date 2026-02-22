@@ -51,6 +51,27 @@
 #define BTREE_COMMON_MINUTES_DIVISOR 60
 
 /**
+ * @brief Value to enable (!= 0) or disable (0) debug.
+ * 
+ */
+#define BTREE_COMMON_DEBUG 1
+
+/**
+ * @brief Macro used call debug. 
+ * 
+ */
+#ifdef BTREE_COMMON_DEBUG
+#define BTREE_DEBUG_PRINT(_index, _status, _type, _debug) \
+    do { \
+        if (_debug) { \
+            btree_common_debug_print(_index, _status, _type, _debug->tree_name, _debug->functions_name); \
+        } \
+    } while(0)
+#else
+#define BTREE_DEBUG_PRINT(_index, _status, _type, _debug) ((void)0)
+#endif
+
+/**
  * @brief Function for delay within the behavior tree.
  *
  * @param timeout_ms Wait timeout value in milliseconds.
@@ -59,5 +80,20 @@
  * @retval BTREE_DEFINITION_STATUS_FAIL if fail something.
  */
 btree_definition_status_t btree_common_action_timeout(uint32_t timeout_ms);
+
+#ifdef BTREE_COMMON_DEBUG == 1
+/**
+ * @brief 
+ * @param index Index of node.
+ * @param status Status of node.
+ * @param node_type Type of node.
+ * @param tree_name[in] Name of tree.
+ * @param functions_name[in] Array of functions names.
+ */
+void btree_common_debug_print(btree_index_t index,
+                              btree_definition_status_t status, 
+                              btree_definition_node_type_t node_type, 
+                              const char *tree_name, const char **functions_name);
+#endif
 
 #endif /* BTREE_COMMON_H_ */

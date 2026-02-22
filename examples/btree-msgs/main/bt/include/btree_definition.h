@@ -68,7 +68,7 @@ typedef uint8_t btree_index_t;
  * @brief Index of first node.
  *
  */
-#define BTREE_DEFINITON_NODE_FIRST_INDEX 0
+#define BTREE_DEFINITION_NODE_FIRST_INDEX 0
 
 /**
  * @brief Error checking a function of type btree_definition_status_t.

@@ -51,7 +51,15 @@ btree_definition_status_t
 btree_process_node(btree_definition_tree_data_t *struct_tree,
                    btree_index_t index_status_key,
                    uint32_t index_status_position) {
-  btree_index_t index = struct_tree->node_index;
+
+  if (struct_tree == NULL) {
+    return BTREE_DEFINITION_STATUS_ERROR;
+  }
+  
+  if (struct_tree->node_index == BTREE_DEFINITION_TREE_UNRELATED) {
+    return BTREE_DEFINITION_STATUS_ERROR;
+  }
+
   btree_definition_status_t status = BTREE_DEFINITION_STATUS_RUNNING;
   const btree_definition_node_t *node_struct = &(struct_tree->tree[index]);
   btree_definition_node_type_t node_type = node_struct->node_type;
@@ -70,6 +78,8 @@ btree_process_node(btree_definition_tree_data_t *struct_tree,
   if (index == BTREE_DEFINITION_TREE_UNRELATED) {
     return BTREE_DEFINITION_STATUS_FAIL;
   }
+
+  BTREE_DEBUG_PRINT(index, status, node_type, struct_tree->debug);
 
   switch (node_type) {
   case BTREE_DEFINITION_NODE_ACTION:

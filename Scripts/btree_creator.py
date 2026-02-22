@@ -1,5 +1,7 @@
 import os
+import re
 import math
+import difflib
 from datetime import date
 
 NODE_UNRELATED = "BTREE_DEFINITION_TREE_UNRELATED"
@@ -13,10 +15,11 @@ class ARCHIVE_CREATOR:
         self.copyrights = ""
         self.project = ""
         self.output = ""
+        self.prefix = ""
         self.func_commented = []
         self.func_empty = []
 
-    def set_text(self, name = None, email = None, version = None, copyrights = None, project = None):
+    def set_text(self, name = None, email = None, version = None, copyrights = None, project = None, prefix = None):
         self.name = name if name != None else input("Put your name:")
         self.email = email if email != None else input("Put your email:")
         self.version = version if version != None else input("Put your project version:")
@@ -24,6 +27,8 @@ class ARCHIVE_CREATOR:
         self.project = project if project != None else input("Put your project ID:")
         if self.project != "":
             self.project = self.project + "_"
+        if(prefix != None):
+            self.prefix = prefix + "_"
 
     def archive_header(self, archive, src_file = None):
         today          = date.today()
@@ -43,8 +48,8 @@ class ARCHIVE_CREATOR:
 
     def archive_top(self, archive, src_file = False, includes = None):
         if src_file == False:
-            self.text    += f"#ifndef BTREE_{self.project.upper()}{archive.upper()}_H_\n"
-            self.text    += f"#define BTREE_{self.project.upper()}{archive.upper()}_H_\n\n"
+            self.text    += f"#ifndef {self.prefix.upper()}BTREE_{self.project.upper()}{archive.upper()}_H_\n"
+            self.text    += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}{archive.upper()}_H_\n\n"
             if archive == 'common':
                 self.text    += f'#include "btree_definition.h"\n'
             else:
@@ -57,15 +62,15 @@ class ARCHIVE_CREATOR:
         self.text += "\n"
             
     def tree_vector(self, archive, btree_array):
-        text = ""
+        array_texts = []
         for item in btree_array:
             index          = item[0]
             node_type      = item[1]
             if isinstance(item[2], str) and item[2] != NODE_UNRELATED:
                 item[2]    =  f"&{self.project.lower()}" + item[2]
             params         = ', '.join(map(str, item[2:]))
-            text     += f"         [{index}] = {node_type}({params}), \\\n"
-        return text
+            array_texts.append(f"        [{index}] = {node_type}({params}), \n")
+        return array_texts
 
     def create_declaration_commented(self, archive, functions):
         for function in functions:
@@ -79,13 +84,13 @@ class ARCHIVE_CREATOR:
                 if function[1] == "action":
                     self.text += '* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;\n'
                 self.text += '*/\n'
-                self.text += f"btree_definition_status_t btree_{self.project.lower()}{archive.lower()}_{function[0]}(void);\n\n"
+                self.text += f"btree_definition_status_t {self.prefix}btree_{self.project.lower()}{function[0]}(void);\n\n"
 
     def create_declaration_empty(self, archive, functions):
         for function in functions:
             if function[0] not in self.func_empty:
                 self.func_empty.append(function[0])
-                self.text += f"btree_definition_status_t btree_{self.project.lower()}{archive.lower()}_{function[0]}(void)\n"
+                self.text += f"btree_definition_status_t {self.prefix}btree_{self.project.lower()}{function[0]}(void)\n"
                 self.text += "{\n"
                 self.text += "  return BTREE_DEFINITION_STATUS_SUCCESS;\n}\n\n"
 
@@ -104,54 +109,101 @@ class ARCHIVE_CREATOR:
         self.archive_end(archive, src=True, editable=True)
 
     def archive_end(self, archive, src = None, endif = None, editable = None):
-        endif      = f"#endif /* BTREE_{self.project.upper()}{archive.upper()}_H_ */" if src == None and endif == None else ""
+        endif      = f"#endif /* {self.prefix.upper()}BTREE_{self.project.upper()}{archive.upper()}_H_ */" if src == None and endif == None else ""
         self.text += endif
         if editable == True:
             local = f'{self.output}/include/btree_{self.project[:-1].lower()}' if src == None else f'{self.output}/src/btree_{self.project[:-1].lower()}'
         else:
-            local = f'{self.output}/build/btree_{self.project[:-1].lower()}'
+            local = f'{self.output}/btrees/btree_{self.project[:-1].lower()}'
         archive_name = f"btree_{self.project.lower()}{archive}"
         archive_name += ".h" if src == None else ".c"
         os.makedirs(local, exist_ok=True) 
         output_bht = os.path.join(local, archive_name)
+        final_text = self.text
+        if editable == True and os.path.exists(output_bht):
+            with open(output_bht, 'r', encoding='utf-8') as file:
+                texto_existente = file.read()
+            diff = difflib.ndiff(
+                texto_existente.splitlines(keepends=True), 
+                self.text.splitlines(keepends=True)
+            )
+            linhas_merged = []
+            for linha in diff:
+                if linha.startswith('  '):
+                    linhas_merged.append(linha[2:])
+                elif linha.startswith('- '):
+                    linhas_merged.append(linha[2:])
+                elif linha.startswith('+ '):
+                    linhas_merged.append(linha[2:])
+            final_text = "".join(linhas_merged)
         with open(output_bht, 'w', encoding='utf-8') as file:
-            file.write(self.text)
+            file.write(final_text)
         self.text = ""
     
     def tree_general_inc(self, tree_size):
         self.text         += "/**\n"
         self.text         += f" * @brief {self.project[:-1].lower()} tree size.\n"
         self.text         += " *\n */\n"
-        self.text         += f"#define BTREE_{self.project.upper()}ARRAY_SIZE {tree_size}\n\n"
+        self.text         += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}ARRAY_SIZE {tree_size}\n\n"
         self.text         += "/**\n"
         self.text         += f" * @brief Array containing the nodes of the {self.project[:-1].lower()} tree.\n"
         self.text         += " *\n */\n"
-        self.text         += f"extern const btree_definition_node_t btree_{self.project.lower()}array[BTREE_{self.project.upper()}ARRAY_SIZE];\n\n"
+        self.text         += f"extern const btree_definition_node_t {self.prefix.lower()}btree_{self.project.lower()}array[{self.prefix.upper()}BTREE_{self.project.upper()}ARRAY_SIZE];\n\n"
         self.text         += "/**\n"
         self.text         += f" * @brief Externalizes {self.project[:-1].lower()} tree control structure.\n"
         self.text         += " *\n */\n"
-        self.text         += f"extern btree_definition_tree_data_t btree_{self.project.lower()}control;\n\n"
+        self.text         += f"extern btree_definition_tree_data_t {self.prefix.lower()}btree_{self.project.lower()}control;\n\n"
 
     def tree_general_src(self, btree_array):
         self.text         += "/**\n"
         self.text         += f" * @brief Array containing the nodes of the {self.project[:-1].lower()} tree.\n"
         self.text         += " *\n */\n"
-        self.text         += f"const btree_definition_node_t btree_{self.project.lower()}array[BTREE_{self.project.upper()}ARRAY_SIZE] = \n"
+        self.text         += f"const btree_definition_node_t {self.prefix.lower()}btree_{self.project.lower()}array[{self.prefix.upper()}BTREE_{self.project.upper()}ARRAY_SIZE] = \n"
         self.text         += "{\n"
         for item in btree_array:
-            self.text     += item
+            for i in item:
+                self.text     += i
         self.text         += "};\n\n"
+        self.text         += "#if BTREE_COMMON_DEBUG == 1\n"
+        self.text         += "/**\n"
+        self.text         += f" * @brief Array containing the debug string names of the nodes of {self.project[:-1].lower()} tree.\n"
+        self.text         += " *\n */\n"
+        self.text         += f"static const char * const {self.prefix.lower()}btree_{self.project.lower()}array_debug[{self.prefix.upper()}BTREE_{self.project.upper()}ARRAY_SIZE] = \n"
+        self.text         += "{\n"
+        for item in btree_array:
+            for i in item:
+                name           = re.search(r"&([a-zA-Z0-9_]+)\)", i)
+                self.text     += "        "
+                if name:
+                    self.text += f"\"{name.group(1)}\""
+                else:
+                    self.text += "NULL"
+                self.text     += ",\n"
+            self.text         += "};\n\n"
+            self.text         += "/**\n"
+            self.text         += f" * @brief Struct of debug information of the {self.project[:-1].lower()} tree.\n"
+            self.text         += " *\n */\n"
+            self.text         += f"static const btree_definition_debug_t btree_{self.project.lower()}debug_item = {{\n"
+            self.text         += f"    .tree_name = \"{self.project.upper()[:-1]}\",\n"
+            self.text         += f"    .functions_name = {self.prefix.lower()}btree_{self.project.lower()}array_debug,\n"
+            self.text         += "};\n"
+        self.text         += "#endif\n\n"
         self.text         += "/**\n"
         self.text         += f" * @brief {self.project[:-1].lower()} tree Control Structure.\n"
         self.text         += " *\n */\n"
-        self.text         += f"btree_definition_tree_data_t btree_{self.project.lower()}control = "
+        self.text         += f"btree_definition_tree_data_t {self.prefix.lower()}btree_{self.project.lower()}control = "
         self.text         += "{\n"
         self.text         += "    .last_node_state = BTREE_DEFINITION_STATUS_RUNNING,\n"
-        self.text         += "    .node_index      = BTREE_DEFINITON_NODE_FIRST_INDEX,\n"
-        self.text         += f"    .tree_size       = BTREE_{self.project.upper()}ARRAY_SIZE,\n"
-        self.text         += f"    .nodes_status    = btree_{self.project.lower()}status_nodes,\n"
-        self.text         += f"    .array_attempts  = btree_{self.project.lower()}common_attempts,\n"
-        self.text         += f"    .tree            = btree_{self.project.lower()}array,\n"
+        self.text         += "    .node_index      = BTREE_DEFINITION_NODE_FIRST_INDEX,\n"
+        self.text         += f"    .tree_size       = {self.prefix.upper()}BTREE_{self.project.upper()}ARRAY_SIZE,\n"
+        self.text         += f"    .nodes_status    = {self.prefix.lower()}btree_{self.project.lower()}status_nodes,\n"
+        self.text         += f"    .array_attempts  = {self.prefix.lower()}btree_{self.project.lower()}common_attempts,\n"
+        self.text         += f"    .tree            = {self.prefix.lower()}btree_{self.project.lower()}array,\n"
+        self.text         += f"#if BTREE_COMMON_DEBUG == 1\n"
+        self.text         += f"    .debug           = &btree_{self.project.lower()}debug_item,\n"
+        self.text         += "#else\n"
+        self.text         += f"    .debug           = NULL,\n"
+        self.text         += "#endif\n"
         self.text         += "};\n\n"
 
     def generate_general_tree_inc(self, tree_size):
@@ -181,80 +233,26 @@ class ARCHIVE_CREATOR:
         self.text += f" * @copyright Copyright © {date.today().year} {self.copyrights}. All rights reserved.\n" if self.copyrights != "" else ""
         self.text += " *\n"
         self.text += " */\n\n"
-        self.text += f"#ifndef BTREE_{self.project.upper()}BLACKBOARD_H_\n"
-        self.text += f"#define BTREE_{self.project.upper()}BLACKBOARD_H_\n\n"
+        self.text += f"#ifndef {self.prefix.upper()}BTREE_{self.project.upper()}BLACKBOARD_H_\n"
+        self.text += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}BLACKBOARD_H_\n\n"
         self.text += f"#include \"btree_{self.project.lower()}common.h\"\n\n"
         self.text += "/**\n"
-        self.text += " * @brief Values in na blackboard.\n"
+        self.text += f" * @brief Blackboard {self.project[:-1].lower()} tree struct.\n"
         self.text += " * \n"
         self.text += " */\n"
-        self.text += f'typedef enum btree_{self.project.lower()}blackboard_value_id\n'
-        self.text += '{\n'
-        self.text += f'    __BTREE_{self.project.upper()}BLACKBOARD_VALUE_ID_AMOUNT,'
-        self.text += '\n}'
-        self.text += f' btree_{self.project.lower()}blackboard_value_id_t;\n\n'
+        self.text += f"struct {self.prefix.lower()}btree_{self.project[:-1].lower()}_blackboard {{\n"
+        self.text += "};\n\n"
         self.text += "/**\n"
-        self.text += " * @brief Buffers in blackboard.\n"
+        self.text += f" * @brief Structure with relevant data from the {self.project[:-1].lower()} tree blackboard.\n"
         self.text += " * \n"
         self.text += " */\n"
-        self.text += f'typedef enum btree_{self.project.lower()}blackboard_buffer_id\n'
-        self.text += '{\n'
-        self.text += f'    __BTREE_{self.project.upper()}BLACKBOARD_BUFFER_ID_AMOUNT,'
-        self.text += '\n}'
-        self.text += f' btree_{self.project.lower()}blackboard_buffer_id_t;\n\n'
-        self.text += "/**\n"
-        self.text += f" * @brief Structure with relevant data from the {self.project[:-1].lower()} tree blackboard .\n"
-        self.text += " * \n"
-        self.text += " */\n"
-        self.text += f"extern struct btree_{self.project.lower()}blackboard btree_{self.project.lower()}data;\n\n"
-        self.text += "/**\n"
-        self.text += f" * @brief Set specific value from blackboard data in {self.project[:-1].lower()} tree.\n"
-        self.text += " * \n"
-        self.text += " * @param id value id.\n"
-        self.text += " * @param value [in] pointer carrying the value to be saved.\n"
-        self.text += " *\n"
-        self.text += " * @retval BTREE_DEFINITION_STATUS_SUCCESS case success.\n"
-        self.text += " * @retval BTREE_DEFINITION_STATUS_FAIL case pointer null.\n"
-        self.text += " */\n"
-        self.text += f'btree_definition_status_t btree_{self.project.lower()}blackboard_set_value(btree_{self.project.lower()}blackboard_value_id_t id, void *value);\n\n'
-        self.text += "/**\n"
-        self.text += f" * @brief Get specific value from blackboard data in {self.project[:-1].lower()} tree.\n"
-        self.text += " * \n"
-        self.text += " * @param id value id.\n"
-        self.text += " * @param target [out] value output pointer.\n"
-        self.text += " *\n"
-        self.text += " * @retval BTREE_DEFINITION_STATUS_SUCCESS case success.\n"
-        self.text += " * @retval BTREE_DEFINITION_STATUS_FAIL case pointer null.\n"
-        self.text += " */\n"
-        self.text += f'btree_definition_status_t btree_{self.project.lower()}blackboard_get_value(btree_{self.project.lower()}blackboard_value_id_t id, void *target);\n\n'
-        self.text += "/**\n"
-        self.text += f" * @brief Set specific buffer from blackboard data in {self.project[:-1].lower()} tree.\n"
-        self.text += " * \n"
-        self.text += " * @param id buffer id.\n"
-        self.text += " * @param buffer [in] buffer.\n"
-        self.text += " * @param buffer_size size of buffer.\n"
-        self.text += " *\n"
-        self.text += " * @retval BTREE_DEFINITION_STATUS_SUCCESS case success.\n"
-        self.text += " * @retval BTREE_DEFINITION_STATUS_FAIL case pointer null or size zero.\n"
-        self.text += " */\n"
-        self.text += f'btree_definition_status_t btree_{self.project.lower()}blackboard_set_buffer(btree_{self.project.lower()}blackboard_buffer_id_t id, uint8_t *buffer, size_t buffer_size);\n\n'
-        self.text += "/**\n"
-        self.text += f" * @brief Set specific buffer from blackboard data in {self.project[:-1].lower()} tree.\n"
-        self.text += " * \n"
-        self.text += " * @param id buffer id.\n"
-        self.text += " * @param buffer [out] buffer.\n"
-        self.text += " * @param buffer_size [out] size of buffer.\n"
-        self.text += " *\n"
-        self.text += " * @retval BTREE_DEFINITION_STATUS_SUCCESS case success.\n"
-        self.text += " * @retval BTREE_DEFINITION_STATUS_FAIL case any pointer null.\n"
-        self.text += " */\n"
-        self.text += f'btree_definition_status_t btree_{self.project.lower()}blackboard_get_buffer(btree_{self.project.lower()}blackboard_buffer_id_t id, uint8_t *buffer, size_t *buffer_len);\n\n'
+        self.text += f"extern struct {self.prefix.lower()}btree_{self.project.lower()}blackboard {self.prefix.lower()}btree_{self.project.lower()}data;\n\n"
         self.text += "/**\n"
         self.text += f" * @brief Clear all blackboard data from the {self.project[:-1].lower()} tree.\n"
         self.text += " * \n"
         self.text += " */\n"
-        self.text += f"void btree_{self.project.lower()}reset_blackboard(void);\n\n"
-        self.text += f"#endif /* BTREE_{self.project.upper()}BLACKBOARD_H_ */\n"
+        self.text += f"void {self.prefix.lower()}btree_{self.project.lower()}reset_blackboard(void);\n\n"
+        self.text += f"#endif /* {self.prefix.upper()}BTREE_{self.project.upper()}BLACKBOARD_H_ */\n"
 
     def generate_blackboard_src(self):
         self.text  = "/**\n"
@@ -276,85 +274,23 @@ class ARCHIVE_CREATOR:
         self.text += f" * @brief Tree structure with relevant blackboard data {self.project[:-1].lower()}.\n"
         self.text += " * \n"
         self.text += " */\n"
-        self.text += f"struct btree_{self.project.lower()}blackboard " + "{\n    \n}"
-        self.text += f" btree_{self.project.lower()}data = "
-        self.text += "{\n    \n"
+        self.text += f"struct {self.prefix.lower()}btree_{self.project[:-1].lower()}_blackboard {self.prefix.lower()}btree_{self.project[:-1].lower()}_data = {{\n"
         self.text += "};\n\n"
-        self.text += f'btree_definition_status_t btree_{self.project.lower()}blackboard_set_value(btree_{self.project.lower()}blackboard_value_id_t id, void *value)\n'
-        self.text += '{\n'
-        self.text += '    if(value == NULL)\n'
-        self.text += '    {\n'
-        self.text += '        return BTREE_DEFINITION_STATUS_FAIL;\n'
-        self.text += '    }\n\n'
-        self.text += '    switch(id)\n'
-        self.text += '    {\n'
-        self.text += '        default: {\n\n'
-        self.text += '            break;\n'
-        self.text += '        }\n'
-        self.text += '    }\n'
-        self.text += '    \n'
-        self.text += '    return BTREE_DEFINITION_STATUS_SUCCESS;\n'
-        self.text += '}\n\n'
-        self.text += f'btree_definition_status_t btree_{self.project.lower()}blackboard_get_value(btree_{self.project.lower()}blackboard_value_id_t id, void *target)\n'
-        self.text += '{\n'
-        self.text += '    if(target == NULL)\n'
-        self.text += '    {\n'
-        self.text += '        return BTREE_DEFINITION_STATUS_FAIL;\n'
-        self.text += '    }\n\n'
-        self.text += '    switch(id)\n'
-        self.text += '    {\n'
-        self.text += '        default: {\n\n'
-        self.text += '            break;\n'
-        self.text += '        }\n'
-        self.text += '    }\n'
-        self.text += '    \n'
-        self.text += '    return BTREE_DEFINITION_STATUS_SUCCESS;\n'
-        self.text += '}\n\n'
-        self.text += f'btree_definition_status_t btree_{self.project.lower()}blackboard_set_buffer(btree_{self.project.lower()}blackboard_buffer_id_t id, uint8_t *buffer, size_t buffer_size)\n'
-        self.text += '{\n'
-        self.text += '    size_t buffer_len = buffer_size;\n\n'
-        self.text += '    if((buffer == NULL) || (buffer_size == 0))\n'
-        self.text += '    {\n'
-        self.text += '        return BTREE_DEFINITION_STATUS_FAIL;\n'
-        self.text += '    }\n\n'
-        self.text += '    switch(id)\n'
-        self.text += '    {\n'
-        self.text += '        default: {\n\n'
-        self.text += '            break;\n'
-        self.text += '        }\n'
-        self.text += '    }\n'
-        self.text += '    \n'
-        self.text += '    return BTREE_DEFINITION_STATUS_SUCCESS;\n'
-        self.text += '}\n\n'
-        self.text += f'btree_definition_status_t btree_{self.project.lower()}blackboard_get_buffer(btree_{self.project.lower()}blackboard_buffer_id_t id, uint8_t *buffer, size_t *buffer_len)\n'
-        self.text += '{\n'
-        self.text += '    if((buffer == NULL) || (buffer_len == NULL))\n'
-        self.text += '    {\n'
-        self.text += '        return BTREE_DEFINITION_STATUS_FAIL;\n'
-        self.text += '    }\n\n'
-        self.text += '    switch(id)\n'
-        self.text += '    {\n'
-        self.text += '        default: {\n\n'
-        self.text += '            break;\n'
-        self.text += '        }\n'
-        self.text += '    }\n'
-        self.text += '    \n'
-        self.text += '    return BTREE_DEFINITION_STATUS_SUCCESS;\n'
-        self.text += '}\n\n'
-        self.text += f"void btree_{self.project.lower()}reset_blackboard(void)\n"
+        self.text += f"void {self.prefix.lower()}btree_{self.project.lower()}reset_blackboard(void)\n"
         self.text += "{\n"
-        self.text += f"     memset(&btree_{self.project.lower()}data, 0, sizeof(btree_{self.project.lower()}data));\n"
+        self.text += f"    memset(&{self.prefix.lower()}btree_{self.project.lower()}data, 0, sizeof({self.prefix.lower()}btree_{self.project.lower()}data));\n"
         self.text += "}\n"
 
     def generate_blackboard(self):
         self.generate_blackboard_inc()
         self.archive_end('blackboard', endif = False, editable=True)
         self.generate_blackboard_src()
-        output_src = os.path.join(f'{self.output}/src/btree_{self.project[:-1].lower()}', f'btree_{self.project.lower()}blackboard.c')
-        os.makedirs(os.path.dirname(output_src), exist_ok=True)
-        with open(output_src, 'w', encoding='utf-8') as file:
-            file.write(self.text)
-        self.text = ""
+        self.archive_end('blackboard', src=True, endif = False, editable=True)
+        #output_src = os.path.join(f'{self.output}/src/btree_{self.project[:-1].lower()}', f'btree_{self.project.lower()}blackboard.c')
+        #os.makedirs(os.path.dirname(output_src), exist_ok=True)
+        #with open(output_src, 'w', encoding='utf-8') as file:
+        #    file.write(self.text)
+        #self.text = ""
 
     def generate_common_inc(self, max_ramification_attempts, tree_size):
         self.archive_header("common")
@@ -362,19 +298,19 @@ class ARCHIVE_CREATOR:
         self.text += "/**\n"
         self.text += " * @brief Size of array nodes status.\n"
         self.text += " *\n */\n"
-        self.text += f"#define BTREE_{self.project.upper()}COMMON_STATUS_NODES_SIZE (btree_index_t) {math.ceil((tree_size / 16))}\n\n"
+        self.text += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}COMMON_STATUS_NODES_SIZE (btree_index_t) {math.ceil((tree_size / 16))}\n\n"
         self.text += "/**\n"
         self.text += f" * @brief Number of fields needed in the worst case scenario of tree {self.project[:-1].lower()} attempted fields.\n"
         self.text += " *\n */\n"
-        self.text += f"#define BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE {max_ramification_attempts}\n\n"
+        self.text += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE {max_ramification_attempts}\n\n"
         self.text += "/**\n"
         self.text += f" * @brief Externalize array of tree {self.project[:-1].lower()} attemps.\n"
         self.text += " *\n */\n"
-        self.text += f"extern uint32_t btree_{self.project.lower()}status_nodes[BTREE_{self.project.upper()}COMMON_STATUS_NODES_SIZE];\n\n"
+        self.text += f"extern uint32_t {self.prefix.lower()}btree_{self.project.lower()}status_nodes[{self.prefix.upper()}BTREE_{self.project.upper()}COMMON_STATUS_NODES_SIZE];\n\n"
         self.text += "/**\n"
         self.text += f" * @brief Externalize array of tree {self.project[:-1].lower()} attemps.\n"
         self.text += " *\n */\n"
-        self.text += f"extern uint32_t btree_{self.project.lower()}common_attempts[BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE];\n\n"
+        self.text += f"extern uint32_t {self.prefix.lower()}btree_{self.project.lower()}common_attempts[{self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE];\n\n"
         self.archive_end("common")
 
     def generate_common_src(self):
@@ -383,12 +319,12 @@ class ARCHIVE_CREATOR:
         self.text += "/**\n"
         self.text += " * @brief Nodes states. Each value, carry 16 nodes status. Each node status is 2 bits.\n"
         self.text += " *\n */\n"
-        self.text += f"uint32_t btree_{self.project.lower()}status_nodes[BTREE_{self.project.upper()}COMMON_STATUS_NODES_SIZE] = {{0}};\n\n"
+        self.text += f"uint32_t {self.prefix.lower()}btree_{self.project.lower()}status_nodes[{self.prefix.upper()}BTREE_{self.project.upper()}COMMON_STATUS_NODES_SIZE] = {{0}};\n\n"
         self.text += "/**\n"
         self.text += " * @brief Fields to input tries or attempts.\n"
         self.text += " *\n */\n"
-        self.text += f"uint32_t btree_{self.project.lower()}common_attempts[BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE] = {{0}};\n\n"
-        self.archive_end("common", src=True, )
+        self.text += f"uint32_t {self.prefix.lower()}btree_{self.project.lower()}common_attempts[{self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE] = {{0}};\n\n"
+        self.archive_end("common", src=True)
 
     def generate_common(self, num_max_attempts, tree_size):
         self.generate_common_inc(num_max_attempts, tree_size)
