@@ -190,8 +190,8 @@ typedef struct btree_definition_node {
  * 
  */
 typedef struct btree_definition_debug {
-  const char *tree_name;                     /**< Name of tree. */
-  const char **functions_name;               /**< Name of function. */
+  const char *const tree_name;                     /**< Name of tree. */
+  const char *const *functions_name;               /**< Name of function. */
 } btree_definition_debug_t;
 
 /**
