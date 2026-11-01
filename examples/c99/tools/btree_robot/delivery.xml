@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4" main_tree_to_execute="delivery">
+  <BehaviorTree ID="delivery">
+    <Sequence>
+      <Fallback>
+        <ScriptCondition code="battery_ok"/>
+        <Script code="charge"/>
+      </Fallback>
+      <RetryUntilSuccessful num_attempts="3">
+        <Script code="open_door"/>
+      </RetryUntilSuccessful>
+      <Sleep msec="200"/>
+      <Inverter>
+        <ScriptCondition code="obstacle_detected"/>
+      </Inverter>
+      <Script code="deliver_package"/>
+    </Sequence>
+  </BehaviorTree>
+</root>

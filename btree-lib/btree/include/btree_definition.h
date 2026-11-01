@@ -68,7 +68,7 @@ typedef uint8_t btree_index_t;
  * @brief Index of first node.
  *
  */
-#define BTREE_DEFINITON_NODE_FIRST_INDEX 0
+#define BTREE_DEFINITION_NODE_FIRST_INDEX 0
 
 /**
  * @brief Error checking a function of type btree_definition_status_t.
@@ -186,6 +186,15 @@ typedef struct btree_definition_node {
 } btree_definition_node_t;
 
 /**
+ * @brief Structure of debug tree.
+ * 
+ */
+typedef struct btree_definition_debug {
+  const char *const tree_name;                     /**< Name of tree. */
+  const char *const *functions_name;               /**< Name of function. */
+} btree_definition_debug_t;
+
+/**
  * @brief Structure of relevant items of a tree.
  *
  */
@@ -196,6 +205,7 @@ typedef struct btree_definition_tree_data {
   uint32_t *nodes_status;                    /**< Pointer to status of nodes. */
   uint32_t *array_attempts;                  /**< Pointer to attempts array. */
   const btree_definition_node_t *tree;       /**< Pointer to tree. */
+  const btree_definition_debug_t *debug;     /**< Pointer to debug items. */
 } btree_definition_tree_data_t;
 
 /**
@@ -273,9 +283,8 @@ typedef struct btree_definition_config_functions {
                                             _times, _local, _node_limit)       \
   {                                                                            \
     .node_type = BTREE_DEFINITION_NODE_REPEAT, .st_index = _success_target,    \
-    .decorator_node.ties_node.node_limit = _node_limit,                        \
-    .decorator_node.ties_node.times = _times,                                  \
-    .decorator_node.ties_node.local = _local,                                  \
+    .ft_index = _fail_target, .decorator_node.node_limit = _node_limit,        \
+    .decorator_node.times = _times, .decorator_node.index = _local,            \
   }
 
 /**
@@ -392,7 +401,7 @@ typedef struct btree_definition_config_functions {
   {                                                                            \
     .node_type = BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_SUCCESS,    \
     .st_index = _success_target, .ft_index = _fail_target,                     \
-    .decorator_node.ties_node.node_limit = _node_limit,                        \
+    .decorator_node.node_limit = _node_limit,                                  \
   }
 
 /**

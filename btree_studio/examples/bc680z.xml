@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4">
+  <BehaviorTree ID="config">
+    <Sequence>
+      <Script code="disable_echo"/>
+      <Script code="set_code_error"/>
+      <Script code="set_bands"/>
+      <Sleep msec="2000"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <BehaviorTree ID="connect">
+    <Sequence>
+      <Fallback>
+        <ScriptCondition code="is_radio_ready"/>
+        <Sequence>
+          <Script code="set_apn_address_cmd"/>
+          <Script code="set_apn_pass_cmd"/>
+          <Script code="set_turn_on_nbiot"/>
+          <Script code="check_sim_card"/>
+          <Script code="set_imsi_cmd"/>
+          <Script code="get_imsi"/>
+        </Sequence>
+      </Fallback>
+      <Fallback>
+        <ScriptCondition code="still_connected"/>
+        <RetryUntilSuccessful num_attempts="2">
+          <Sequence>
+            <Fallback>
+              <Sequence>
+                <Script code="set_network_status_cmd"/>
+                <ScriptCondition code="is_valid_status"/>
+              </Sequence>
+              <Sequence>
+                <Script code="set_network_status_changed_cmd"/>
+                <Fallback>
+                  <Sequence>
+                    <Script code="set_network_status_cmd"/>
+                    <ScriptCondition code="is_valid_status"/>
+                  </Sequence>
+                  <Script code="wait_register"/>
+                </Fallback>
+              </Sequence>
+              <Sleep msec="10000"/>
+            </Fallback>
+            <Fallback>
+              <ScriptCondition code="is_not_socket_open"/>
+              <Script code="set_close_socket_cmd"/>
+            </Fallback>
+            <Script code="check_pdp_address"/>
+            <Script code="get_ip"/>
+            <Script code="set_power_cmd"/>
+            <Script code="get_power"/>
+            <Script code="set_open_socket"/>
+            <Script code="get_socket"/>
+            <Script code="enable_recv_msg_async"/>
+            <Script code="ping"/>
+            <Script code="get_pong"/>
+            <Script code="check_pong"/>
+          </Sequence>
+        </RetryUntilSuccessful>
+        <Script code="increment_apn_index"/>
+      </Fallback>
+      <Script code="set_power_cmd"/>
+      <Script code="get_power"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <BehaviorTree ID="error">
+    <Fallback>
+      <Sequence>
+        <ScriptCondition code="need_reset"/>
+        <Script code="set_reg_nbiot_default"/>
+        <Script code="set_close_socket_cmd"/>
+        <Script code="set_turn_off_nbiot"/>
+      </Sequence>
+      <ForceFailure>
+        <Sequence>
+          <Script code="pwr_off_module"/>
+          <Sleep msec="5000"/>
+        </Sequence>
+      </ForceFailure>
+    </Fallback>
+  </BehaviorTree>
+
+  <BehaviorTree ID="fota">
+    <Fallback>
+      <ScriptCondition code="is_module_updated"/>
+      <ScriptCondition code="fota_attempts_exceeded"/>
+      <ForceFailure>
+        <Sequence>
+          <Script code="init_fota"/>
+          <Script code="wait_start"/>
+          <RetryUntilSuccessful num_attempts="250">
+            <Sequence>
+              <Script code="check_percent"/>
+              <Script code="process_percent"/>
+              <ScriptCondition code="is_download_done"/>
+              <Script code="check_end"/>
+            </Sequence>
+          </RetryUntilSuccessful>
+          <Script code="check_end_code"/>
+          <Script code="wait_upgrade"/>
+          <Script code="wait_reset"/>
+          <Script code="finish_upgrade"/>
+          <Script code="check_finish_upgrade"/>
+        </Sequence>
+      </ForceFailure>
+    </Fallback>
+  </BehaviorTree>
+
+  <BehaviorTree ID="gps">
+    <Sequence>
+      <Fallback>
+        <ScriptCondition code="is_gnss_powered_on"/>
+        <Sequence>
+          <Script code="turn_on_gnss_cmd"/>
+          <Script code="disable_gsv_cmd"/>
+          <Script code="disable_gsa_cmd"/>
+          <Script code="disable_vtg_cmd"/>
+          <Script code="enable_gga_cmd"/>
+          <Script code="enable_rmc_cmd"/>
+          <Script code="set_hot_start_cmd"/>
+        </Sequence>
+      </Fallback>
+      <Sequence>
+        <Script code="set_gga_cmd"/>
+        <Script code="get_gga"/>
+        <Sleep msec="500"/>
+        <Script code="set_rmc_cmd"/>
+        <Script code="get_rmc"/>
+        <Sleep msec="500"/>
+      </Sequence>
+      <ForceSuccess>
+        <Fallback>
+          <Sequence>
+            <ScriptCondition code="able_to_cold_restart"/>
+            <Script code="set_cold_start_cmd"/>
+            <Script code="turn_off_gnss_cmd"/>
+          </Sequence>
+          <Sequence>
+            <ScriptCondition code="able_to_powered_off_module"/>
+            <Script code="turn_off_gnss_cmd"/>
+          </Sequence>
+        </Fallback>
+      </ForceSuccess>
+    </Sequence>
+  </BehaviorTree>
+
+  <BehaviorTree ID="info">
+    <Sequence>
+      <Script code="set_product_id_cmd"/>
+      <Script code="get_product_id"/>
+      <Script code="set_firmware_version_cmd"/>
+      <Script code="get_firmware_version"/>
+      <Script code="set_imei_cmd"/>
+      <Script code="get_imei"/>
+      <Script code="set_versions_cmd"/>
+      <Script code="get_versions"/>
+    </Sequence>
+  </BehaviorTree>
+
+  <BehaviorTree ID="init">
+    <Fallback>
+      <ScriptCondition code="is_initialized"/>
+      <Sequence>
+        <SubTree ID="pwr_on"/>
+        <SubTree ID="config"/>
+        <SubTree ID="info"/>
+        <Script code="set_initialized"/>
+      </Sequence>
+    </Fallback>
+  </BehaviorTree>
+
+  <BehaviorTree ID="main">
+    <Fallback>
+      <Sequence>
+        <ScriptCondition code="not_have_errors"/>
+        <SubTree ID="init"/>
+        <SubTree ID="gps"/>
+        <SubTree ID="nbiot"/>
+      </Sequence>
+      <SubTree ID="error"/>
+    </Fallback>
+  </BehaviorTree>
+
+  <BehaviorTree ID="nbiot">
+    <Fallback>
+      <Sequence>
+        <ScriptCondition code="able_to_turn_off_nbiot"/>
+        <Script code="set_turn_off_nbiot"/>
+      </Sequence>
+      <Sequence>
+        <Fallback>
+          <ScriptCondition code="need_change_cell_jammer"/>
+          <Script code="set_cell_jammer"/>
+        </Fallback>
+        <Fallback>
+          <ScriptCondition code="is_nbiot_fail"/>
+          <Script code="set_turn_off_nbiot"/>
+        </Fallback>
+        <SubTree ID="connect"/>
+        <SubTree ID="fota"/>
+        <Fallback>
+          <ScriptCondition code="need_ping"/>
+          <Sequence>
+            <Script code="ping"/>
+            <Script code="get_pong"/>
+            <Script code="check_pong"/>
+          </Sequence>
+        </Fallback>
+        <Fallback>
+          <ScriptCondition code="not_have_msg_to_send"/>
+          <Sequence>
+            <Script code="get_packet"/>
+            <Script code="send_data"/>
+          </Sequence>
+        </Fallback>
+        <RetryUntilSuccessful num_attempts="10">
+          <Fallback>
+            <ScriptCondition code="not_have_msg_to_read"/>
+            <Sequence>
+              <Script code="get_new_msg"/>
+              <Script code="process_msg"/>
+              <ScriptCondition code="not_have_msg_to_read"/>
+            </Sequence>
+          </Fallback>
+        </RetryUntilSuccessful>
+      </Sequence>
+    </Fallback>
+  </BehaviorTree>
+
+  <BehaviorTree ID="pwr_on">
+    <Sequence>
+      <Script code="set_pins"/>
+      <Sleep msec="1000"/>
+      <Fallback>
+        <Script code="verify_cmd"/>
+        <RetryUntilSuccessful num_attempts="5">
+          <Sequence>
+            <Script code="change_mcu_baudrate"/>
+            <Script code="verify_cmd"/>
+            <Script code="set_modem_baudrate_9600"/>
+          </Sequence>
+        </RetryUntilSuccessful>
+      </Fallback>
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel/>
+
+</root>

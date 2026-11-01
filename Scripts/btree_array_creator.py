@@ -1,4 +1,5 @@
 import os
+import shutil
 import bree_execute
 import xml.etree.ElementTree as ET
 from btree_creator import ARCHIVE_CREATOR
@@ -43,8 +44,8 @@ class BTREE_ARRAY:
     def get_max_attempts(self):
         return self.max_attempts_nodes
 
-    def set_archive_data(self, name = None, email = None, version = None, copyrights = None, project = None):
-        self.library.set_text(name=name, email=email, version=version, copyrights=copyrights, project=project)
+    def set_archive_data(self, name = None, email = None, version = None, copyrights = None, project = None, prefix = None):
+        self.library.set_text(name=name, email=email, version=version, copyrights=copyrights, project=project, prefix=prefix)
 
     def set_nodes_name(self, node_root = None, node_fallback = None, node_reactive_fallback = None, 
                        node_sequence = None, node_reactive_sequence = None, 
@@ -126,14 +127,14 @@ class BTREE_ARRAY:
 
         elif self.node_action == element.tag:
             self.tree.append([self.node_number, self.node_action, 
-                              f"&btree_{self.library.project.lower()}{tree_id}_" + element.get('code'),
+                              f"&{self.library.prefix.lower()}btree_{self.library.project.lower()}{tree_id.lower()}_" + element.get('code'),
                               "BTREE_DEFINITION_TREE_UNRELATED", node_parent_number, is_reactive])
             node_parent_number -= 1
             if not element.get('code') in self.functions:
                 self.functions[self.archives.index(tree_id)].append((element.get('code'), "action", tree_id))
 
         elif self.node_condition == element.tag:
-            self.tree.append([self.node_number, self.node_condition, f"&btree_{self.library.project.lower()}{tree_id}_" + element.get('code'), 
+            self.tree.append([self.node_number, self.node_condition, f"&{self.library.prefix.lower()}btree_{self.library.project.lower()}{tree_id.lower()}_" + element.get('code'), 
                               "BTREE_DEFINITION_TREE_UNRELATED", node_parent_number, is_reactive])
             node_parent_number -= 1
             if not element.get('code') in self.functions:
@@ -259,4 +260,9 @@ class BTREE_ARRAY:
         self.load_archive()
         #For reactivity, use self.attempts_blocks, if not, use self.attempts_max.
         self.library.generate_archives(self.archives, self.texts, self.functions, self.attempts_blocks, self.tree_remodeled_size, output)
+        # Keep the source tree next to the generated array: <output>/tools/btree_<project>/<archive>.xml
+        tools = os.path.join(self.library.output, "tools", f"btree_{self.library.project[:-1].lower()}")
+        os.makedirs(tools, exist_ok=True)
+        if os.path.abspath(self.archive) != os.path.abspath(os.path.join(tools, os.path.basename(self.archive))):
+            shutil.copy(self.archive, tools)
         self.max_attempts_nodes = 0

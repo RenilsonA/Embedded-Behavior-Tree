@@ -48,3 +48,4 @@ ble_app/data.csv
 codeStyles
 .clang-format
 /cmake-build-debug
+examples/c99/delivery

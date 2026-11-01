@@ -57,19 +57,20 @@ btree_manager_reactivity_tick_tree(btree_definition_tree_data_t *struct_tree) {
   uint8_t check_node = 0;
   btree_definition_status_t tree_status = BTREE_DEFINITION_STATUS_SUCCESS;
   btree_definition_node_type_t node_type = BTREE_DEFINITION_NODE_CONDITION;
-  btree_index_t node_index = struct_tree->node_index;
-  btree_index_t index = struct_tree->node_index;
+  btree_index_t node_index = 0;
+  btree_index_t index = 0;
   btree_index_t index_status_key = 0;
   uint32_t index_status_position = 0;
   uint32_t mask = 0;
   uint32_t value_updated = 0;
-  uint32_t value_status =
-      struct_tree->nodes_status[BTREE_DEFINITON_NODE_FIRST_INDEX];
+  uint32_t value_status = 0;
 
   if (struct_tree == NULL) {
     return BTREE_DEFINITION_STATUS_ERROR;
   }
 
+  node_index = struct_tree->node_index;
+  index = struct_tree->node_index;
   struct_tree->node_index = 0;
 
   while (struct_tree->node_index < node_index) {
@@ -105,12 +106,14 @@ btree_manager_reactivity_tick_tree(btree_definition_tree_data_t *struct_tree) {
     if ((struct_tree->node_index < node_index) &&
         (check_node != BTREE_DEFINITION_STATUS_RE_EXECUTE)) {
       if (check_node == BTREE_DEFINITION_STATUS_SUCCESS) {
+        tree_status = BTREE_DEFINITION_STATUS_SUCCESS;
         struct_tree->node_index =
             struct_tree->tree[struct_tree->node_index].st_index;
       } else if ((check_node == BTREE_DEFINITION_STATUS_RUNNING) ||
                  (check_node == BTREE_DEFINITION_STATUS_RE_EXECUTE)) {
         struct_tree->node_index = struct_tree->node_index + 1;
       } else if (check_node == BTREE_DEFINITION_STATUS_FAIL) {
+        tree_status = BTREE_DEFINITION_STATUS_FAIL;
         struct_tree->node_index =
             struct_tree->tree[struct_tree->node_index].ft_index;
       }
@@ -120,17 +123,23 @@ btree_manager_reactivity_tick_tree(btree_definition_tree_data_t *struct_tree) {
         index_status_key = (struct_tree->node_index & 0x0F) << 1;
         index_status_position = struct_tree->node_index >> 4;
         value_status = struct_tree->nodes_status[index_status_position];
-        mask = (0b11 << (index_status_key));
+        mask = (0b11u << (index_status_key));
         value_updated = (value_status & (~mask));
         if (check_node == BTREE_DEFINITION_STATUS_SUCCESS) {
           struct_tree->nodes_status[index_status_position] =
-              (value_updated) | (0b01 << (index_status_key));
+              (value_updated) | (0b01u << (index_status_key));
         } else if (check_node == BTREE_DEFINITION_STATUS_FAIL) {
           struct_tree->nodes_status[index_status_position] =
-              (value_updated) | (0b10 << (index_status_key));
+              (value_updated) | (0b10u << (index_status_key));
         }
       }
     }
+  }
+
+  /* A node re-evaluated above finished the whole tree: report its result
+     instead of reading past the end of the array. */
+  if (struct_tree->node_index == BTREE_DEFINITION_TREE_UNRELATED) {
+    return tree_status;
   }
 
   node_type = struct_tree->tree[struct_tree->node_index].node_type;
@@ -162,7 +171,7 @@ btree_manager_reset_tree(btree_definition_tree_data_t *struct_tree) {
   }
 
   struct_tree->last_node_state = BTREE_DEFINITION_STATUS_RUNNING;
-  struct_tree->node_index = BTREE_DEFINITON_NODE_FIRST_INDEX;
+  struct_tree->node_index = BTREE_DEFINITION_NODE_FIRST_INDEX;
 
   return BTREE_DEFINITION_STATUS_SUCCESS;
 }
@@ -174,7 +183,7 @@ btree_manager_clear_nodes(btree_definition_tree_data_t *struct_tree) {
   }
 
   memset(struct_tree->nodes_status, 0,
-         ((struct_tree->tree_size >> 4) + 1) *
+         ((struct_tree->tree_size + 15u) >> 4) *
              sizeof(struct_tree->nodes_status[0]));
 
   return BTREE_DEFINITION_STATUS_SUCCESS;

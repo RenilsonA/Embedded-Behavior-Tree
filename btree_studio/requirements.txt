@@ -1,0 +1,5 @@
+# Opcional: só é necessário para ler a UART pelo servidor ("Serial UART (servidor)").
+# Sem ele o Studio funciona normalmente (edição, Web Serial, SWD/RTT via TCP, simulação).
+pyserial>=3.5
+# Opcional: J-Link direto pelo SWD ("J-Link direto (SWD/RTT)"). Requer também o software J-Link da SEGGER instalado.
+pylink-square>=1.2
