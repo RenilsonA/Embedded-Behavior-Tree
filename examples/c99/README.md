@@ -5,6 +5,7 @@ A simulated delivery robot driven by `btree-lib`, in plain C99 with only the sta
 ```bash
 make run          # gcc/clang/any C99 compiler: make CC=clang run
 make DEBUG=0 run  # without the [BTREE] log lines
+./delivery 300    # waits 300 ms between ticks (to watch it live in BTree Studio)
 ```
 
 ## The tree
@@ -15,7 +16,7 @@ make DEBUG=0 run  # without the [BTREE] log lines
 Sequence
 ├── Fallback
 │   ├── battery_ok?           Condition
-│   └── charge                Action, returns STAND_BY while charging
+│   └── charge                Action, returns RUNNING while charging
 ├── RetryUntilSuccessful(3)
 │   └── open_door             Action, the door is stuck on the first try
 ├── Sleep(200 ms)
@@ -24,7 +25,7 @@ Sequence
 └── deliver_package           Action
 ```
 
-`main.c` runs three deliveries. The first one charges the battery (STAND_BY across several ticks), the second one goes straight through, and the third one finds an obstacle, so the Inverter fails the tree.
+`main.c` runs three deliveries. The first one charges the battery (the action stays RUNNING across several ticks), the second one goes straight through, and the third one finds an obstacle, so the Inverter fails the tree.
 
 ## Files
 
@@ -47,7 +48,10 @@ x.create_trees(archive="../examples/c99/tools/btree_robot/delivery.xml", output=
 
 ## Watching it in BTree Studio
 
-The `[BTREE] | Tree: ROBOT | ...` lines are the format BTree Studio reads. Save a run with `./delivery > run.log`, open `tools/btree_robot/delivery.xml` in a Studio project named `robot`, and replay the file from the Monitor (Terminal › replay log).
+The `[BTREE] | Tree: ROBOT | ...` lines are the format BTree Studio reads. Open `tools/btree_robot/delivery.xml` in a Studio project named `robot` (or set its *Nome no log* to `ROBOT`), press `F3` for the Monitor, and then:
+
+- **Live:** in the Terminal, choose the *External command* source with `/full/path/to/examples/c99/delivery 300` and click **Conectar**. The tree animates as the program runs, one tick every 300 ms.
+- **Replay:** save a run with `./delivery > run.log` and replay the file (Terminal › replay log).
 
 ## On a microcontroller
 

@@ -175,7 +175,7 @@ Full guide (Portuguese): [`btree_studio/README.md`](btree_studio/README.md).
 
 ## Examples and validation
 
-- **[`examples/c99`](examples/c99)** (any PC, plain C99): a simulated delivery robot with Condition, Action in `STAND_BY`, Retry, Sleep and Inverter. `make run` shows the tree working and prints the `[BTREE]` log.
+- **[`examples/c99`](examples/c99)** (any PC, plain C99): a simulated delivery robot with Condition, an Action that stays `RUNNING` across ticks, Retry, Sleep and Inverter. `make run` shows the tree working and prints the `[BTREE]` log.
 - **[`examples/btree-msgs`](examples/btree-msgs)** (ESP32, ESP-IDF), **[`examples/btree-example-subtree`](examples/btree-example-subtree)** and **[`examples/btree-long-tree`](examples/btree-long-tree)** (Silicon Labs EFR32, Simplicity Studio): message dispatch, subtrees and a long tree. All examples use `btree-lib/` directly and implement the two platform functions in their own `btree_port.c`.
 - **[`examples/ble-wifi`](examples/ble-wifi)** (ESP32, ESP-IDF, non-reactive): turns on BLE, receives the Wi-Fi SSID/password through two characteristics, tears down BLE, connects and pings periodically to detect disconnects. The exported tree and real execution logs are in `Tree/`.
 - **[`Scripts/tree-examples`](Scripts/tree-examples)**: generator inputs. They include a small reactive tree (`simple.xml`), message-dispatch trees (`msgs.xml`, `msgs_ble.xml`), the ESP32 tree and a decorator-heavy tree.
