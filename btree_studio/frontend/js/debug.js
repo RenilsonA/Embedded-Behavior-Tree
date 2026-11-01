@@ -190,17 +190,17 @@
     rec.cls = 'bt st-' + parsed.status;
     counters.events += 1;
     var match = projectForLog(parsed.tree);
-    if (!match) { rec.warn = 'Nenhum projeto aberto para receber este log.'; Terminal.push(rec); return rec; }
+    if (!match) { rec.warn = 'No open project to receive this log.'; Terminal.push(rec); return rec; }
     if (!match.exact && !counters.unknownTree[parsed.tree]) {
       counters.unknownTree[parsed.tree] = true;
-      UI.toast('Log com Tree "' + parsed.tree + '" não corresponde a nenhum projeto. Usando o projeto ativo "' + match.project.name + '". Ajuste o "Nome no log" do projeto.', 'warning', 7000);
+      UI.toast('Log with Tree "' + parsed.tree + '" does not match any project. Using the active project "' + match.project.name + '". Adjust the project’s "Name in log".', 'warning', 7000);
     }
     var project = match.project;
     var order = orderFor(project);
     var entry = order[parsed.index];
     rec.projectId = project.id;
     if (!entry) {
-      rec.warn = 'Node ' + parsed.index + ' não existe no projeto ' + project.name + ' (tem ' + order.length + ' nós). O XML pode estar diferente do firmware.';
+      rec.warn = 'Node ' + parsed.index + ' does not exist in project ' + project.name + ' (has ' + order.length + ' nodes). The XML may differ from the firmware.';
       counters.mismatches += 1;
       Terminal.push(rec);
       return rec;
@@ -209,7 +209,7 @@
     var node = tree && tree.nodes[entry.nodeId];
     rec.entry = entry;
     if (node && parsed.type && parsed.type !== node.type) {
-      rec.warn = 'Tipo no log (' + parsed.rawType + ') difere do nó #' + parsed.index + ' no Studio (' + M.TYPES[node.type].label + '). XML e firmware podem estar dessincronizados.';
+      rec.warn = 'Type in log (' + parsed.rawType + ') differs from node #' + parsed.index + ' in the Studio (' + M.TYPES[node.type].label + '). The XML and the firmware may be out of sync.';
       counters.mismatches += 1;
     }
     seq += 1;
@@ -297,7 +297,7 @@
         html += '<span class="chip st-' + p.status + '">' + UI.esc(p.rawStatus) + '</span>';
         html += '<span class="tx">' + highlight(rec.text) + '</span>';
         if (rec.warn) html += '<span class="tw" title="' + UI.esc(rec.warn) + '">' + I.icon('alert', 13) + '</span>';
-        e.title = rec.entry ? 'Clique para localizar o nó #' + p.index + ' e ver a árvore neste instante' + (rec.warn ? '\n⚠ ' + rec.warn : '') : (rec.warn || '');
+        e.title = rec.entry ? 'Click to locate node #' + p.index + ' and see the tree at this instant' + (rec.warn ? '\n⚠ ' + rec.warn : '') : (rec.warn || '');
       } else {
         html += '<span class="tx">' + UI.esc(rec.text) + '</span>';
       }
@@ -368,7 +368,7 @@
         paused = !paused;
         pause.classList.toggle('active', paused);
         pause.innerHTML = I.icon(paused ? 'play' : 'pause', 16);
-        pause.title = paused ? 'Retomar rolagem automática' : 'Pausar rolagem automática';
+        pause.title = paused ? 'Resume auto-scroll' : 'Pause auto-scroll';
         if (!paused) box.scrollTop = box.scrollHeight;
       });
       document.getElementById('termClear').addEventListener('click', clear);
@@ -402,7 +402,7 @@
   /* ------------------------------------------------------------------ *
    * Data sources
    * ------------------------------------------------------------------ */
-  var conn = { kind: null, connected: false, label: 'Desconectado', busy: false };
+  var conn = { kind: null, connected: false, label: 'Disconnected', busy: false };
   function setConn(patch) {
     Object.assign(conn, patch);
     Store.emit('connection');
@@ -421,13 +421,13 @@
         if (ev.connected) {
           setConn({ kind: ev.kind, connected: true, label: ev.description || ev.kind, server: true });
         } else if (conn.server) {
-          if (ev.error) { Terminal.sys('Conexão encerrada: ' + ev.error, 'error'); UI.toast('Conexão encerrada: ' + ev.error, 'error'); }
-          setConn({ kind: null, connected: false, label: 'Desconectado', server: false });
+          if (ev.error) { Terminal.sys('Connection closed: ' + ev.error, 'error'); UI.toast('Connection closed: ' + ev.error, 'error'); }
+          setConn({ kind: null, connected: false, label: 'Disconnected', server: false });
         }
       }
     };
     es.onerror = function () {
-      if (conn.server) { setConn({ connected: false, label: 'Servidor indisponível', server: false }); }
+      if (conn.server) { setConn({ connected: false, label: 'Server unavailable', server: false }); }
     };
   }
 
@@ -437,7 +437,7 @@
 
   function connectWebSerial(baud) {
     if (!webSerialSupported()) {
-      UI.toast('Este navegador não suporta Web Serial. Use Chrome/Edge, ou rode o servidor (python3 studio.py) e escolha "Serial UART (servidor)".', 'error', 8000);
+      UI.toast('This browser does not support Web Serial. Use Chrome/Edge, or run the server (python3 studio.py) and choose "Serial UART (server)".', 'error', 8000);
       return Promise.resolve();
     }
     return navigator.serial.requestPort().then(function (port) {
@@ -447,12 +447,12 @@
         var info = port.getInfo ? port.getInfo() : {};
         var label = 'Web Serial' + (info.usbVendorId ? ' ' + info.usbVendorId.toString(16) + ':' + (info.usbProductId || 0).toString(16) : '') + ' @ ' + baud;
         setConn({ kind: 'webserial', connected: true, label: label, server: false });
-        Terminal.sys('Conectado: ' + label, 'ok');
+        Terminal.sys('Connected: ' + label, 'ok');
         readWebSerial();
       });
     }).catch(function (e) {
       if (e && e.name === 'NotFoundError') return; // user cancelled the picker
-      UI.toast('Falha ao abrir porta: ' + (e && e.message ? e.message : e), 'error');
+      UI.toast('Failed to open port: ' + (e && e.message ? e.message : e), 'error');
     });
   }
 
@@ -475,7 +475,7 @@
         });
       }
       pump().catch(function (e) {
-        if (web.keepReading) Terminal.sys('Erro de leitura: ' + e.message, 'error');
+        if (web.keepReading) Terminal.sys('Read error: ' + e.message, 'error');
       }).then(function () {
         try { web.reader.releaseLock(); } catch (e) { /* ignore */ }
         if (web.keepReading && web.port && web.port.readable) loop(); else finish();
@@ -483,8 +483,8 @@
     }
     function finish() {
       if (conn.kind === 'webserial') {
-        if (web.keepReading) Terminal.sys('Porta serial desconectada.', 'error');
-        setConn({ kind: null, connected: false, label: 'Desconectado' });
+        if (web.keepReading) Terminal.sys('Serial port disconnected.', 'error');
+        setConn({ kind: null, connected: false, label: 'Disconnected' });
       }
       var p = web.port;
       web.port = null;
@@ -496,12 +496,12 @@
   function disconnectWebSerial() {
     web.keepReading = false;
     if (web.reader) web.reader.cancel().catch(function () {});
-    else if (web.port) { web.port.close().catch(function () {}); web.port = null; setConn({ kind: null, connected: false, label: 'Desconectado' }); }
+    else if (web.port) { web.port.close().catch(function () {}); web.port = null; setConn({ kind: null, connected: false, label: 'Disconnected' }); }
   }
 
   if (webSerialSupported()) {
     navigator.serial.addEventListener('disconnect', function (e) {
-      if (web.port && e.target === web.port) { Terminal.sys('Dispositivo removido.', 'error'); disconnectWebSerial(); }
+      if (web.port && e.target === web.port) { Terminal.sys('Device removed.', 'error'); disconnectWebSerial(); }
     });
   }
 
@@ -511,13 +511,13 @@
 
   function startSimulation() {
     var project = Store.tabProject() || Store.activeProject();
-    if (!project) { UI.toast('Abra um projeto para simular.', 'warning'); return; }
+    if (!project) { UI.toast('Open a project to simulate.', 'warning'); return; }
     var issues = M.validateProject(project).filter(function (i) { return i.level === 'error'; });
-    if (issues.length) UI.toast('O projeto tem ' + issues.length + ' problema(s); a simulação pode ser incompleta.', 'warning');
+    if (issues.length) UI.toast('The project has ' + issues.length + ' problem(s); the simulation may be incomplete.', 'warning');
     var token = ++sim.token;
     sim.running = true;
-    setConn({ kind: 'sim', connected: true, label: 'Simulação: ' + project.name });
-    Terminal.sys('Simulação iniciada — projeto ' + project.name + ' (Tree: ' + M.logNameOf(project) + ')', 'ok');
+    setConn({ kind: 'sim', connected: true, label: 'Simulation: ' + project.name });
+    Terminal.sys('Simulation started: project ' + project.name + ' (Tree: ' + M.logNameOf(project) + ')', 'ok');
     var order = M.compiledOrder(project);
     var idx = {};
     order.forEach(function (e, i) { idx[key(e.ctx, e.nodeId)] = i; });
@@ -618,11 +618,11 @@
       if (!alive()) return;
       iteration += 1;
       resetStatuses(project.id);
-      Terminal.sys('— execução ' + iteration + ' —', 'info');
+      Terminal.sys('— run ' + iteration + ' —', 'info');
       var main = project.trees[project.mainTreeId];
       exec(main, main.rootId, '', 0).then(function (r) {
         if (!alive()) return;
-        Terminal.sys('Árvore terminou com ' + (r === 'success' ? 'SUCESSO' : 'FALHA'), r === 'success' ? 'ok' : 'error');
+        Terminal.sys('Tree finished with ' + (r === 'success' ? 'SUCCESS' : 'FAIL'), r === 'success' ? 'ok' : 'error');
         return wait(1600).then(cycle);
       });
     }
@@ -632,33 +632,33 @@
   function stopSimulation() {
     sim.running = false;
     sim.token += 1;
-    if (conn.kind === 'sim') { Terminal.sys('Simulação parada.', 'info'); setConn({ kind: null, connected: false, label: 'Desconectado' }); }
+    if (conn.kind === 'sim') { Terminal.sys('Simulation stopped.', 'info'); setConn({ kind: null, connected: false, label: 'Disconnected' }); }
   }
 
   // --- Replay of a saved log
   var replay = { lines: [], pos: 0, token: 0, running: false };
   function loadReplay(text, name) {
     replay.lines = text.split(/\r?\n/).filter(function (l) { return l.trim(); })
-      // remove a leading time stamp written by "Salvar log" (hh:mm:ss.mmm)
+      // remove a leading time stamp written by "Save log" (hh:mm:ss.mmm)
       .map(function (l) { return l.replace(/^\d\d:\d\d:\d\d\.\d{3}\s/, ''); });
     replay.pos = 0;
     var bt = replay.lines.filter(function (l) { return M.parseLogLine(l); }).length;
-    document.getElementById('srcHint').textContent = (name ? name + ': ' : '') + replay.lines.length + ' linhas (' + bt + ' [BTREE])';
-    UI.toast('Log carregado: ' + replay.lines.length + ' linhas, ' + bt + ' eventos [BTREE]. Clique em Reproduzir.', 'success');
+    document.getElementById('srcHint').textContent = (name ? name + ': ' : '') + replay.lines.length + ' lines (' + bt + ' [BTREE])';
+    UI.toast('Log loaded: ' + replay.lines.length + ' lines, ' + bt + ' [BTREE] events. Click Replay.', 'success');
   }
 
   function startReplay() {
-    if (!replay.lines.length) { UI.toast('Carregue um arquivo de log ou cole linhas primeiro.', 'warning'); return; }
+    if (!replay.lines.length) { UI.toast('Load a log file or paste lines first.', 'warning'); return; }
     var token = ++replay.token;
     replay.running = true;
     if (replay.pos >= replay.lines.length) replay.pos = 0;
-    setConn({ kind: 'replay', connected: true, label: 'Reproduzindo log' });
+    setConn({ kind: 'replay', connected: true, label: 'Replaying log' });
     function step() {
       if (!replay.running || replay.token !== token) return;
       if (replay.pos >= replay.lines.length) {
-        Terminal.sys('Fim do log.', 'ok');
+        Terminal.sys('End of log.', 'ok');
         replay.running = false;
-        setConn({ kind: null, connected: false, label: 'Desconectado' });
+        setConn({ kind: null, connected: false, label: 'Disconnected' });
         return;
       }
       handleLine(replay.lines[replay.pos++]);
@@ -669,7 +669,7 @@
 
   function stopReplay() {
     replay.running = false; replay.token += 1;
-    if (conn.kind === 'replay') setConn({ kind: null, connected: false, label: 'Desconectado' });
+    if (conn.kind === 'replay') setConn({ kind: null, connected: false, label: 'Disconnected' });
   }
 
   // --- Unified connect / disconnect
@@ -679,7 +679,7 @@
     var kind = sourceKind();
     if (conn.connected) return disconnect();
     if (kind !== 'webserial' && kind !== 'sim' && kind !== 'replay' && !S.backend) {
-      UI.toast('Esta fonte precisa do servidor local. Rode "python3 studio.py" e abra http://localhost:8765', 'error', 8000);
+      UI.toast('This source needs the local server. Run "python3 studio.py" and open http://localhost:8765', 'error', 8000);
       return;
     }
     if (S.mode !== 'monitor') Store.setMode('monitor');
@@ -691,7 +691,7 @@
     if (kind === 'serial') {
       cfg.port = document.getElementById('serialPort').value;
       cfg.baudrate = baud;
-      if (!cfg.port) { UI.toast('Escolha uma porta serial (clique em ⟳ para atualizar a lista).', 'warning'); return; }
+      if (!cfg.port) { UI.toast('Choose a serial port (click ⟳ to refresh the list).', 'warning'); return; }
     } else if (kind === 'tcp') {
       cfg.host = document.getElementById('tcpHost').value.trim() || '127.0.0.1';
       cfg.port = Number(document.getElementById('tcpPort').value) || 9090;
@@ -700,29 +700,29 @@
       cfg.serial = document.getElementById('jlProbe').value;
       cfg.speed = Number(document.getElementById('jlSpeed').value) || 4000;
       cfg.rttAddress = document.getElementById('jlRtt').value.trim();
-      if (!cfg.device) { UI.toast('Informe o dispositivo do J-Link (ex.: STM32F411RE).', 'warning'); return; }
+      if (!cfg.device) { UI.toast('Enter the J-Link device (e.g. STM32F411RE).', 'warning'); return; }
     } else if (kind === 'process') {
       cfg.command = document.getElementById('procCmd').value.trim();
-      if (!cfg.command) { UI.toast('Digite o comando (ex.: pyocd rtt -t stm32f411re).', 'warning'); return; }
+      if (!cfg.command) { UI.toast('Type the command (e.g. pyocd rtt -t stm32f411re).', 'warning'); return; }
     }
     setConn({ busy: true });
     startEvents();
     return Store.api('/api/connect', cfg).then(function (res) {
-      Terminal.sys('Conectado: ' + (res.description || kind), 'ok');
+      Terminal.sys('Connected: ' + (res.description || kind), 'ok');
       setConn({ busy: false, kind: kind, connected: true, label: res.description || kind, server: true });
       // the source may already have ended (e.g. a command that exits at once): reconcile with the server
       setTimeout(reconcileServer, 400);
     }).catch(function (e) {
       setConn({ busy: false });
-      Terminal.sys('Falha ao conectar: ' + e.message, 'error');
-      UI.toast('Falha ao conectar: ' + e.message, 'error', 8000);
+      Terminal.sys('Failed to connect: ' + e.message, 'error');
+      UI.toast('Failed to connect: ' + e.message, 'error', 8000);
     });
   }
 
   function reconcileServer() {
     if (!conn.server) return;
     Store.api('/api/info').then(function (info) {
-      if (conn.server && info.bridge && !info.bridge.connected) setConn({ kind: null, connected: false, label: 'Desconectado', server: false });
+      if (conn.server && info.bridge && !info.bridge.connected) setConn({ kind: null, connected: false, label: 'Disconnected', server: false });
     }).catch(function () { /* ignore */ });
   }
 
@@ -732,11 +732,11 @@
     if (conn.kind === 'replay') return stopReplay();
     if (conn.server) {
       return Store.api('/api/disconnect', {}).then(function () {
-        Terminal.sys('Desconectado.', 'info');
-        setConn({ kind: null, connected: false, label: 'Desconectado', server: false });
+        Terminal.sys('Disconnected.', 'info');
+        setConn({ kind: null, connected: false, label: 'Disconnected', server: false });
       }).catch(function (e) { UI.toast(e.message, 'error'); });
     }
-    setConn({ kind: null, connected: false, label: 'Desconectado' });
+    setConn({ kind: null, connected: false, label: 'Disconnected' });
   }
 
   function send(text) {
@@ -745,7 +745,7 @@
       return w.write(new TextEncoder().encode(text)).finally(function () { w.releaseLock(); });
     }
     if (conn.server) return Store.api('/api/send', { data: text });
-    return Promise.reject(new Error('Nenhum dispositivo conectado que aceite envio.'));
+    return Promise.reject(new Error('No connected device accepts sending.'));
   }
 
   function refreshPorts(silent) {
@@ -754,13 +754,13 @@
     Store.api('/api/serial/ports').then(function (res) {
       var prev = sel.value;
       sel.innerHTML = '';
-      if (!res.available) { sel.appendChild(UI.el('option', { value: '', text: 'pyserial não instalado' })); return; }
-      if (!res.ports.length) sel.appendChild(UI.el('option', { value: '', text: '(nenhuma porta encontrada)' }));
+      if (!res.available) { sel.appendChild(UI.el('option', { value: '', text: 'pyserial not installed' })); return; }
+      if (!res.ports.length) sel.appendChild(UI.el('option', { value: '', text: '(no port found)' }));
       res.ports.forEach(function (p) {
         sel.appendChild(UI.el('option', { value: p.device, text: p.device + (p.description && p.description !== 'n/a' ? ' — ' + p.description : '') }));
       });
       if (prev && res.ports.some(function (p) { return p.device === prev; })) sel.value = prev;
-      if (!silent) UI.toast(res.ports.length + ' porta(s) encontrada(s).', 'info', 1500);
+      if (!silent) UI.toast(res.ports.length + ' port(s) found.', 'info', 1500);
     }).catch(function (e) { if (!silent) UI.toast(e.message, 'error'); });
   }
 
@@ -770,21 +770,21 @@
     Store.api('/api/jlink/probes').then(function (res) {
       var prev = sel.value;
       sel.innerHTML = '';
-      sel.appendChild(UI.el('option', { value: '', text: res.available ? '(primeiro J-Link)' : 'pylink não instalado' }));
+      sel.appendChild(UI.el('option', { value: '', text: res.available ? '(first J-Link)' : 'pylink not installed' }));
       res.probes.forEach(function (p) { sel.appendChild(UI.el('option', { value: String(p.serial), text: p.serial + (p.product ? ' — ' + p.product : '') })); });
       if (prev && res.probes.some(function (p) { return String(p.serial) === prev; })) sel.value = prev;
-      if (!silent) UI.toast(res.available ? res.probes.length + ' J-Link(s) encontrado(s).' : 'Instale: pip install pylink-square (e o software J-Link da SEGGER).', res.available ? 'info' : 'warning', 3000);
+      if (!silent) UI.toast(res.available ? res.probes.length + ' J-Link(s) found.' : 'Install: pip install pylink-square (and SEGGER’s J-Link software).', res.available ? 'info' : 'warning', 3000);
     }).catch(function (e) { if (!silent) UI.toast(e.message, 'error'); });
   }
 
   var SRC_HINTS = {
-    webserial: 'Direto do navegador (Chrome/Edge). Não precisa do servidor.',
-    serial: 'UART lida pelo servidor local (pyserial).',
-    jlink: 'Lê o RTT direto do J-Link pelo SWD (pip install pylink-square). Não precisa de J-Link Commander/RTT Viewer aberto.',
-    tcp: 'SWD: OpenOCD "rtt server start 9090 0" ou J-Link RTT (porta 19021).',
-    process: 'Lê a saída de um comando, ex.: pyocd rtt, probe-rs attach, JLinkRTTClient.',
-    sim: 'Executa a árvore principal do projeto ativo com resultados aleatórios.',
-    replay: 'Reproduz um log salvo (.log/.txt) no formato [BTREE].'
+    webserial: 'Straight from the browser (Chrome/Edge). No server needed.',
+    serial: 'UART read by the local server (pyserial).',
+    jlink: 'Reads RTT straight from the J-Link over SWD (pip install pylink-square). No J-Link Commander/RTT Viewer needed.',
+    tcp: 'SWD: OpenOCD "rtt server start 9090 0" or J-Link RTT (port 19021).',
+    process: 'Reads a command’s output, e.g. pyocd rtt, probe-rs attach, JLinkRTTClient.',
+    sim: 'Runs the main tree of the active project with random results.',
+    replay: 'Replays a saved log (.log/.txt) in the [BTREE] format.'
   };
 
   function updateSourceUI() {
@@ -794,8 +794,8 @@
     });
     var hint = SRC_HINTS[kind];
     var needsServer = ['serial', 'jlink', 'tcp', 'process'].indexOf(kind) >= 0 && !S.backend;
-    if (kind === 'webserial' && !webSerialSupported()) hint = 'Navegador sem Web Serial — use Chrome/Edge ou o servidor.';
-    if (needsServer) hint = 'Requer o servidor: python3 studio.py';
+    if (kind === 'webserial' && !webSerialSupported()) hint = 'Browser without Web Serial: use Chrome/Edge or the server.';
+    if (needsServer) hint = 'Requires the server: python3 studio.py';
     if (kind !== 'replay' || !replay.lines.length) document.getElementById('srcHint').textContent = hint || '';
     document.getElementById('srcHint').classList.toggle('bad', needsServer || (kind === 'webserial' && !webSerialSupported()));
     try { localStorage.setItem('btstudio.src', JSON.stringify(readSourceCfg())); } catch (e) { /* ignore */ }
@@ -813,10 +813,10 @@
   function renderConn() {
     var pill = document.getElementById('connPill');
     pill.className = 'conn-pill' + (conn.connected ? ' on' : '') + (conn.kind === 'sim' || conn.kind === 'replay' ? ' sim' : '');
-    pill.querySelector('.txt').textContent = conn.busy ? 'Conectando…' : conn.label;
+    pill.querySelector('.txt').textContent = conn.busy ? 'Connecting…' : conn.label;
     var btn = document.getElementById('btnConnect');
-    var label = conn.connected ? (conn.kind === 'sim' || conn.kind === 'replay' ? 'Parar' : 'Desconectar')
-      : (sourceKind() === 'sim' ? 'Simular' : sourceKind() === 'replay' ? 'Reproduzir' : 'Conectar');
+    var label = conn.connected ? (conn.kind === 'sim' || conn.kind === 'replay' ? 'Stop' : 'Disconnect')
+      : (sourceKind() === 'sim' ? 'Simulate' : sourceKind() === 'replay' ? 'Replay' : 'Connect');
     btn.innerHTML = I.icon(conn.connected ? (conn.kind === 'sim' || conn.kind === 'replay' ? 'stop' : 'unplug') : (sourceKind() === 'sim' || sourceKind() === 'replay' ? 'play' : 'plug'), 15) + '<span>' + label + '</span>';
     btn.classList.toggle('danger', conn.connected);
     btn.classList.toggle('primary', !conn.connected);
@@ -860,17 +860,17 @@
     document.getElementById('btnReplayPaste').addEventListener('click', function () {
       var ta = UI.el('textarea', { class: 'input mono', rows: 12, placeholder: '[BTREE] | Tree: MAIN | Node: 0 | Status: Running | Type: Action | Function: ...' });
       UI.modal({
-        title: 'Colar log', width: '720px',
-        body: UI.el('div', { class: 'form' }, [UI.el('p', { class: 'hint', text: 'Cole linhas do terminal do seu dispositivo. Linhas fora do formato [BTREE] também vão para o terminal.' }), ta]),
+        title: 'Paste log', width: '720px',
+        body: UI.el('div', { class: 'form' }, [UI.el('p', { class: 'hint', text: 'Paste lines from your device’s terminal. Lines outside the [BTREE] format also go to the terminal.' }), ta]),
         buttons: [
-          { label: 'Cancelar', value: null },
-          { label: 'Processar agora', value: 'now' },
-          { label: 'Carregar para reproduzir', kind: 'primary', value: 'replay' }
+          { label: 'Cancel', value: null },
+          { label: 'Process now', value: 'now' },
+          { label: 'Load for replay', kind: 'primary', value: 'replay' }
         ]
       }).then(function (v) {
         if (!v || !ta.value.trim()) return;
         if (v === 'now') { if (S.mode !== 'monitor') Store.setMode('monitor'); ta.value.split(/\r?\n/).forEach(function (l) { if (l.trim()) handleLine(l); }); }
-        else loadReplay(ta.value, 'colado');
+        else loadReplay(ta.value, 'pasted');
       });
     });
     document.getElementById('termSend').addEventListener('submit', function (e) {

@@ -63,12 +63,12 @@ def main():
                 elif pk == "sleep" and plast != jval:
                     ok = False
             total += 1
-            print(f"{'OK  ' if ok else 'FAIL'} {xml.name}:{tree} ({len(js)} nós)")
+            print(f"{'OK  ' if ok else 'FAIL'} {xml.name}:{tree} ({len(js)} nodes)")
             if not ok:
                 failures += 1
                 print("   python:", py)
                 print("   studio:", js)
-    print(f"\n{total - failures}/{total} árvores com ordem e saltos (st/ft) idênticos ao compilador.")
+    print(f"\n{total - failures}/{total} trees with order and jumps (st/ft) identical to the compiler.")
     sys.exit(1 if failures else 0)
 
 

@@ -48,7 +48,7 @@
       if (opts.width) box.style.width = opts.width;
       var head = el('div', { class: 'modal-head' }, [
         el('h3', { text: opts.title || '' }),
-        el('button', { class: 'mini', title: 'Fechar (Esc)', html: I.icon('x', 16), onclick: function () { done(undefined); } })
+        el('button', { class: 'mini', title: 'Close (Esc)', html: I.icon('x', 16), onclick: function () { done(undefined); } })
       ]);
       var body = el('div', { class: 'modal-body' });
       if (typeof opts.body === 'string') body.innerHTML = opts.body; else if (opts.body) body.appendChild(opts.body);
@@ -95,7 +95,7 @@
     return modal({
       title: title,
       body: '<p>' + message + '</p>',
-      buttons: [{ label: 'Cancelar', value: false }, { label: okLabel || 'Confirmar', kind: danger ? 'danger' : 'primary', value: true }]
+      buttons: [{ label: 'Cancel', value: false }, { label: okLabel || 'Confirm', kind: danger ? 'danger' : 'primary', value: true }]
     }).then(function (v) { return !!v; });
   }
 
@@ -118,7 +118,7 @@
     input.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); submitTopModal(); } });
     return modal({
       title: title, body: body,
-      buttons: [{ label: 'Cancelar', value: null }, {
+      buttons: [{ label: 'Cancel', value: null }, {
         label: 'OK', kind: 'primary',
         action: function () { if (!check()) { input.focus(); return false; } return input.value.trim(); }
       }]
@@ -185,9 +185,9 @@
   // System clipboard may be missing (http) or denied (tab without focus): never throw.
   function copyText(text, okMsg) {
     var c = navigator.clipboard;
-    return (c ? c.writeText(text) : Promise.reject(new Error('sem clipboard'))).then(function () {
+    return (c ? c.writeText(text) : Promise.reject(new Error('no clipboard'))).then(function () {
       if (okMsg) toast(okMsg, 'success', 1500);
-    }, function () { if (okMsg) toast('O navegador bloqueou a área de transferência.', 'warning'); });
+    }, function () { if (okMsg) toast('The browser blocked the clipboard.', 'warning'); });
   }
 
   function download(filename, text, mime) {
@@ -232,7 +232,7 @@
     });
     input.addEventListener('paste', function (e) {
       var text = (e.clipboardData || window.clipboardData).getData('text');
-      if (/\D/.test(text.trim())) { e.preventDefault(); toast('Somente números são aceitos neste campo.', 'warning'); }
+      if (/\D/.test(text.trim())) { e.preventDefault(); toast('Only digits are accepted in this field.', 'warning'); }
     });
     return input;
   }

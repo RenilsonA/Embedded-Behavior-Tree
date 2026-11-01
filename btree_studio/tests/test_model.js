@@ -68,9 +68,9 @@ test('validation: required/invalid function names, numeric fields, empty control
   const p = M.makeProject('d'); const t = p.trees[p.mainTreeId];
   const leaf = t.nodes[t.nodes[t.rootId].children[0]];
   leaf.props.code = '';
-  assert.ok(M.validateProject(p).some(i => /obrigatório/.test(i.message)));
+  assert.ok(M.validateProject(p).some(i => /required/.test(i.message)));
   leaf.props.code = 'Inimigo?';
-  assert.ok(M.validateProject(p).some(i => /inválido em C/.test(i.message)));
+  assert.ok(M.validateProject(p).some(i => /Invalid C/.test(i.message)));
   leaf.props.code = 'ok';
   M.wrapNode(t, leaf.id, "sleep");
   assert.strictEqual(M.fieldError('sleep', '4294967295'), null);
@@ -82,10 +82,10 @@ test('validation: required/invalid function names, numeric fields, empty control
   M.addNode(sub, M.makeNode('subtree', { ref: p.mainTreeId }), sub.rootId);
   M.addNode(t, M.makeNode('fallback'), t.rootId);
   const issues = M.validateProject(p).map(i => i.message).join('\n');
-  assert.ok(/Root aceita apenas 1 filho/.test(issues));
-  assert.ok(/precisa de pelo menos 1 filho/.test(issues));
+  assert.ok(/Root accepts only 1 child/.test(issues));
+  assert.ok(/needs at least 1 child/.test(issues));
   M.addNode(t, M.makeNode('subtree', { ref: sub.id }), t.nodes[t.rootId].children[1]);
-  assert.ok(/ciclo/.test(M.validateProject(p).map(i => i.message).join('\n')));
+  assert.ok(/cycle/.test(M.validateProject(p).map(i => i.message).join('\n')));
 });
 
 test('log parser accepts every status/type string printed by btree_common.c', () => {
@@ -178,4 +178,4 @@ test('deleteOnly removes just the node; surviving children become loose', () => 
   assert.ok(!M.deleteOnly(t, [t.rootId], () => ({})), 'root is never deleted');
 });
 
-console.log(`\n${passed} testes passaram.`);
+console.log(`\n${passed} tests passed.`);

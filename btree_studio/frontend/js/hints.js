@@ -1,6 +1,6 @@
 /* BTree Studio - contextual hints: a discreet line in the corner of the canvas telling what can be
  * done right now (nothing selected, a node selected, loose nodes, monitor live/past...).
- * Closing it with × hides the hints for good (Ctrl+K › "Mostrar dicas" brings them back). */
+ * Closing it with × hides the hints for good (Ctrl+K › "Show hints" brings them back). */
 (function () {
   'use strict';
   var M = window.BTModel, Store = window.BTStore, UI = window.BTUI, I = window.BTIcons;
@@ -19,23 +19,23 @@
     if (S.mode === 'monitor') {
       var T = window.BTTimeline;
       if (!T || !T.hasEvents()) return '';
-      if (T.isPast()) return k(', .', 'passo') + k('Shift+,.', 'falhas') + k('Espaço', 'reproduzir') + k('End', 'ao vivo');
-      return k('Espaço', 'pausar') + '<span class="h-item">clique na linha do tempo (ou no terminal) para voltar no tempo</span>';
+      if (T.isPast()) return k(', .', 'step') + k('Shift+,.', 'failures') + k('Space', 'play') + k('End', 'live');
+      return k('Space', 'pause') + '<span class="h-item">click the timeline (or the terminal) to go back in time</span>';
     }
     if (M.looseRoots(cur.tree).length) {
-      return '<span class="h-item">Nó solto: arraste a <b>bolinha de cima</b> até um pai para ligá-lo (não dá para salvar com nós soltos)</span>';
+      return '<span class="h-item">Loose node: drag its <b>top dot</b> to a parent to link it (projects with loose nodes cannot be saved)</span>';
     }
     var v = window.BTCanvas.selectedVNode();
     var many = window.BTCanvas.selectedVNodes().length > 1;
-    if (many) return k('Del', 'excluir') + k('Ctrl+C', 'copiar') + k('Ctrl+D', 'duplicar') + k('Esc', 'limpar seleção');
-    if (v && v.readonly) return '<span class="h-item">Nó de outra árvore: duplo clique abre a subárvore para editar</span>';
-    if (v && v.node.type === 'root') return k('Espaço', 'adicionar filho') + k('Ctrl+K', 'comandos');
+    if (many) return k('Del', 'delete') + k('Ctrl+C', 'copy') + k('Ctrl+D', 'duplicate') + k('Esc', 'clear selection');
+    if (v && v.readonly) return '<span class="h-item">Node from another tree: double-click opens the subtree to edit</span>';
+    if (v && v.node.type === 'root') return k('Space', 'add child') + k('Ctrl+K', 'commands');
     if (v) {
       var t = M.TYPES[v.node.type];
-      return k('Espaço', t.maxChildren > v.node.children.length ? 'adicionar filho' : 'adicionar') +
-        k('Enter', v.node.type === 'subtree' ? 'abrir' : 'editar') + k('Del', 'excluir') + k('Alt+←→', 'reordenar') + k('Ctrl+K', 'comandos');
+      return k('Space', t.maxChildren > v.node.children.length ? 'add child' : 'add') +
+        k('Enter', v.node.type === 'subtree' ? 'open' : 'edit') + k('Del', 'delete') + k('Alt+←→', 'reorder') + k('Ctrl+K', 'commands');
     }
-    return '<span class="h-item">Duplo clique no vazio: novo nó</span>' + k('Ctrl+K', 'comandos e busca') + k('F', 'ajustar à tela') + k('F1', 'ajuda');
+    return '<span class="h-item">Double-click on empty space: new node</span>' + k('Ctrl+K', 'commands and search') + k('F', 'fit to screen') + k('F1', 'help');
   }
 
   function update() {
@@ -45,8 +45,8 @@
     last = html;
     if (!html) { box.hidden = true; return; }
     var show = function () {
-      box.innerHTML = '<span class="h-items">' + html + '</span><button class="h-close" title="Ocultar dicas (Ctrl+K › Mostrar dicas traz de volta)">' + I.icon('x', 12) + '</button>';
-      box.querySelector('.h-close').onclick = function () { Store.setSetting('hints', false); UI.toast('Dicas ocultas. Para trazer de volta: Ctrl+K › Mostrar dicas.', 'info', 3500); };
+      box.innerHTML = '<span class="h-items">' + html + '</span><button class="h-close" title="Hide hints (Ctrl+K › Show hints brings them back)">' + I.icon('x', 12) + '</button>';
+      box.querySelector('.h-close').onclick = function () { Store.setSetting('hints', false); UI.toast('Hints hidden. To bring them back: Ctrl+K › Show hints.', 'info', 3500); };
       box.classList.remove('swap');
     };
     if (box.hidden || !window.BTCanvas.motionOK()) { box.hidden = false; show(); return; }

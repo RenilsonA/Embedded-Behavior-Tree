@@ -42,7 +42,7 @@
 #endif
 
 /**
- * @brief Macro used call debug. Declare BTREE_COMMON_DEBUG in the project to enable debug.
+ * @brief Macro used call debug. Define BTREE_COMMON_DEBUG with a non-zero value in the project to enable debug.
  * 
  */
 #if BTREE_COMMON_DEBUG

@@ -28,7 +28,7 @@ const btree_definition_node_t btree_robot_array[BTREE_ROBOT_ARRAY_SIZE] =
         [7] = BTREE_DEFINITION_CREATE_NODE_ACTION(BTREE_DEFINITION_TREE_UNRELATED, BTREE_DEFINITION_TREE_UNRELATED, &btree_robot_delivery_deliver_package), 
 };
 
-#if BTREE_COMMON_DEBUG == 1
+#if BTREE_COMMON_DEBUG
 /**
  * @brief Array containing the debug string names of the nodes of robot tree.
  *
@@ -66,7 +66,7 @@ btree_definition_tree_data_t btree_robot_control = {
     .nodes_status    = btree_robot_status_nodes,
     .array_attempts  = btree_robot_common_attempts,
     .tree            = btree_robot_array,
-#if BTREE_COMMON_DEBUG == 1
+#if BTREE_COMMON_DEBUG
     .debug           = &btree_robot_debug_item,
 #else
     .debug           = NULL,

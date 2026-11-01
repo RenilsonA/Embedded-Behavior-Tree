@@ -15,7 +15,7 @@ const exe = process.env.CHROME;
   const kids = () => pg.evaluate(() => { const v = BTCanvas.selectedVNode(); return v.parent.node.children.map(id => v.tree.nodes[id].props.code || v.tree.nodes[id].type); });
 
   // 1. hints show something useful with nothing selected
-  ok('hint without selection', /Duplo clique/.test(await pg.locator('#hints').innerText()));
+  ok('hint without selection', /Double-click/.test(await pg.locator('#hints').innerText()));
 
   // 2. Space on a selected Sequence + "action abrir_porta" -> child Action with the function filled in
   await pg.click('.node.t-sequence >> nth=1');
@@ -46,7 +46,7 @@ const exe = process.env.CHROME;
   const loose = await pg.evaluate(() => BTModel.looseRoots(BTStore.tabTree()).map(id => BTStore.tabTree().nodes[id]));
   ok('double click creates loose node', loose.length === 1 && loose[0].type === 'repeat' && loose[0].props.num === '4', loose.map(n => n.type));
   await pg.waitForTimeout(300);
-  ok('hint tells how to link loose node', /bolinha de cima/.test(await pg.locator('#hints').innerText()));
+  ok('hint tells how to link loose node', /top dot/.test(await pg.locator('#hints').innerText()));
   await pg.keyboard.press('Control+z');
 
   // 5. Ctrl+K finds a node by function name and selects it
@@ -77,7 +77,7 @@ const exe = process.env.CHROME;
   }
   ok('time travel reproduces the live states', mismatch === 0, { snapshots: snaps.length, mismatch });
   await pg.waitForTimeout(150);
-  ok('badge shows history', /Histórico/.test(await pg.locator('#monitorBadge').innerText()));
+  ok('badge shows history', /History/.test(await pg.locator('#monitorBadge').innerText()));
 
   // 7. step / failure jump / live
   await pg.locator('#canvasWrap').focus();

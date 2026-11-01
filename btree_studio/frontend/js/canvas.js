@@ -40,12 +40,12 @@
     var t = T[node.type];
     if (node.type === 'subtree') {
       var ref = project.trees[node.props.ref];
-      return ref ? ref.name : (node.props.missingRef ? node.props.missingRef + ' ?' : '(escolha a árvore)');
+      return ref ? ref.name : (node.props.missingRef ? node.props.missingRef + ' ?' : '(choose the tree)');
     }
     if (t.field) {
       var v = node.props[t.field.key];
-      if (t.field.kind === 'uint') return (v === '' || v === undefined ? '?' : Number(v).toLocaleString('pt-BR')) + ' ' + (t.field.unit || '');
-      return v || '(sem nome)';
+      if (t.field.kind === 'uint') return (v === '' || v === undefined ? '?' : Number(v).toLocaleString('en-US')) + ' ' + (t.field.unit || '');
+      return v || '(unnamed)';
     }
     if (node.type === 'unknown') return '<' + node.props.tag + '>';
     return node.props.label || '';
@@ -227,7 +227,7 @@
           var hit = svg('path', { d: d, class: 'edge-hit' });
           hit.dataset.key = c.key;
           c.edgeHit = hit;
-          hit.appendChild(svg('title', {})).textContent = 'Clique: selecionar (Del desconecta) · Clique direito: inserir nó no meio';
+          hit.appendChild(svg('title', {})).textContent = 'Click: select (Del disconnects) · Right-click: insert a node in between';
           edgesLayer.appendChild(hit);
         }
       });
@@ -338,8 +338,8 @@
     if (n.type === 'root') {
       var main = v.tree.id === project.mainTreeId;
       e.innerHTML = '<span class="nicon">' + I.icon('root', 14) + '</span><span class="rname">' + UI.esc(main ? 'ROOT' : 'ROOT') + '</span>' +
-        (v.readonly || n.children.length ? '' : '<button class="quick-add" title="Clique: adicionar filho · Arraste: ligar a um nó existente">' + I.icon('plus', 13) + '</button>');
-      e.title = 'Root da árvore ' + v.tree.name;
+        (v.readonly || n.children.length ? '' : '<button class="quick-add" title="Click: add child · Drag: link to an existing node">' + I.icon('plus', 13) + '</button>');
+      e.title = 'Root of tree ' + v.tree.name;
       return e;
     }
     var issues = issuesByNode[n.id] || [];
@@ -354,15 +354,15 @@
       html += '<div class="nbody' + (empty ? ' placeholder' : '') + (t.cat === 'control' ? ' label' : '') + '">' + UI.esc(v.body) + '</div>';
     }
     if (n.type === 'subtree' && project.trees[n.props.ref]) {
-      html += '<button class="sub-toggle" title="' + (v.expanded ? 'Recolher' : 'Expandir aqui') + '">' + I.icon(v.expanded ? 'collapse' : 'expand', 13) + '</button>';
+      html += '<button class="sub-toggle" title="' + (v.expanded ? 'Collapse' : 'Expand here') + '">' + I.icon(v.expanded ? 'collapse' : 'expand', 13) + '</button>';
     }
     // ports: "in" (top) links this node to a parent; the "+" (bottom) adds or links children
-    if (!v.readonly) html += '<span class="port in" title="Arraste até o nó pai para ligar' + (v.parent ? ' (solte no vazio para desconectar)' : '') + '"></span>';
-    if (t.maxChildren > n.children.length && !v.readonly) html += '<button class="quick-add" title="Clique: adicionar filho · Arraste: ligar a um nó existente">' + I.icon('plus', 13) + '</button>';
-    if (v.loose) html += '<span class="loose-tag">solto</span>';
+    if (!v.readonly) html += '<span class="port in" title="Drag to the parent node to link' + (v.parent ? ' (drop on empty space to disconnect)' : '') + '"></span>';
+    if (t.maxChildren > n.children.length && !v.readonly) html += '<button class="quick-add" title="Click: add child · Drag: link to an existing node">' + I.icon('plus', 13) + '</button>';
+    if (v.loose) html += '<span class="loose-tag">loose</span>';
     e.innerHTML = html;
-    var tip = t.label + (v.body ? ': ' + v.body : '') + (idx ? '  (índice no firmware ' + idx + ')' : '') + (v.readonly ? '\n(dentro da subárvore ' + v.tree.name + ' — abra-a para editar)' : '') +
-      (v.loose ? '\nNó solto: arraste a bolinha de cima até um pai (ou o + de um pai até aqui). Não dá para salvar enquanto houver nós soltos.' : '');
+    var tip = t.label + (v.body ? ': ' + v.body : '') + (idx ? '  (firmware index ' + idx + ')' : '') + (v.readonly ? '\n(inside subtree ' + v.tree.name + ', open it to edit)' : '') +
+      (v.loose ? '\nLoose node: drag the top dot to a parent (or a parent’s + to here). The project cannot be saved while there are loose nodes.' : '');
     e.title = tip;
     return e;
   }
@@ -379,7 +379,7 @@
       });
     }
     parts.push('<b>' + (tr.id === p.mainTreeId ? I.icon('star', 12, 'star') : '') + UI.esc(tr.name) + '</b>');
-    if (tab.ctx === null && tr.id !== p.mainTreeId) parts.push('<span class="bc-note" title="Aberta pelo workspace: o monitor mostra o último estado de qualquer instância desta subárvore">todas as instâncias</span>');
+    if (tab.ctx === null && tr.id !== p.mainTreeId) parts.push('<span class="bc-note" title="Opened from the workspace: the monitor shows the latest state of any instance of this subtree">all instances</span>');
     bc.innerHTML = parts.join('<i class="bc-sep">›</i>');
   }
 
@@ -599,17 +599,17 @@
   }
 
   function guardEditor() {
-    if (S.mode !== 'editor') { UI.toast('Mude para o modo Editor para editar a árvore.', 'warning'); return false; }
+    if (S.mode !== 'editor') { UI.toast('Switch to Editor mode to edit the tree.', 'warning'); return false; }
     return true;
   }
 
   function addChild(v, type, index, props) {
     if (!guardEditor() || !v) return null;
-    if (v.readonly) { UI.toast('Este nó pertence a outra árvore. Abra a subárvore para editá-la.', 'warning'); return null; }
+    if (v.readonly) { UI.toast('This node belongs to another tree. Open the subtree to edit it.', 'warning'); return null; }
     var tree = v.tree;
     if (!M.canAcceptChild(tree, v.node.id, type)) {
       var t = T[v.node.type];
-      UI.toast(t.maxChildren === 0 ? t.label + ' não aceita filhos.' : t.label + ' aceita no máximo ' + t.maxChildren + ' filho.', 'warning');
+      UI.toast(t.maxChildren === 0 ? t.label + ' does not accept children.' : t.label + ' accepts at most ' + t.maxChildren + ' child.', 'warning');
       return null;
     }
     var created = null;
@@ -651,7 +651,7 @@
     var all = selectedVNodes();
     var vs = all.filter(function (v) { return !v.readonly && v.node.type !== 'root'; });
     if (!vs.length) {
-      if (all.length) UI.toast(all[0].readonly ? 'Abra a subárvore para excluir nós dela.' : 'A Root não pode ser excluída.', 'warning');
+      if (all.length) UI.toast(all[0].readonly ? 'Open the subtree to delete its nodes.' : 'The Root cannot be deleted.', 'warning');
       return;
     }
     var tree = vs[0].tree, ctx = vs[0].ctx, parent = vs[0].parent;
@@ -694,14 +694,14 @@
   function changeTypeOf(v, type) {
     if (!guardEditor() || !v || v.readonly) return;
     var ok = Store.mutate(current.project.id, function () { return M.changeType(v.tree, v.node.id, type); });
-    if (!ok) UI.toast('Não é possível: o nó tem mais filhos do que ' + T[type].label + ' aceita.', 'warning');
+    if (!ok) UI.toast('Not possible: the node has more children than ' + T[type].label + ' accepts.', 'warning');
   }
 
   // Clipboard = forest of branches. Ctrl+C copies only the selected nodes (links between them kept).
   function setClipboard(forest, what) {
     S.clipboard = forest;
     UI.copyText(JSON.stringify({ btstudio: 2, forest: forest }));
-    UI.toast('Copiado: ' + what, 'info', 1600);
+    UI.toast('Copied: ' + what, 'info', 1600);
   }
 
   function copySelection(cut) {
@@ -710,19 +710,19 @@
     vs = vs.filter(function (v) { return v.tree === vs[0].tree; });
     var one = vs[0];
     setClipboard(M.exportSelection(one.tree, vs.map(function (v) { return v.node.id; })),
-      vs.length === 1 ? T[one.node.type].label + (one.body ? ' "' + one.body + '"' : '') : vs.length + ' nós');
+      vs.length === 1 ? T[one.node.type].label + (one.body ? ' "' + one.body + '"' : '') : vs.length + ' nodes');
     if (cut) deleteSelection();
   }
 
   function copyBranch(v) {
     if (!v || v.node.type === 'root') return;
-    setClipboard([M.exportBranch(v.tree, v.node.id)], 'ramificação de ' + T[v.node.type].label + ' (' + M.collectSubtree(v.tree, v.node.id).length + ' nós)');
+    setClipboard([M.exportBranch(v.tree, v.node.id)], 'branch of ' + T[v.node.type].label + ' (' + M.collectSubtree(v.tree, v.node.id).length + ' nodes)');
   }
 
   // A single copied branch goes under v (or next to it); anything else is pasted loose beside v.
   function pasteInto(v) {
     if (!guardEditor() || !S.clipboard || !v) return;
-    if (v.readonly) { UI.toast('Abra a subárvore para colar nela.', 'warning'); return; }
+    if (v.readonly) { UI.toast('Open the subtree to paste into it.', 'warning'); return; }
     var forest = S.clipboard;
     if (forest.length === 1) {
       var type = forest[0].type, target = null, index;
@@ -772,9 +772,9 @@
   function extractSubtree(v) {
     if (!guardEditor() || !v || v.readonly || v.node.type === 'root') return;
     var p = current.project;
-    UI.prompt('Converter em subárvore', 'Nome da nova subárvore', M.uniqueName('subtree', M.treeNames(p)), function (val) {
-      if (!M.C_IDENT_RE.test(val)) return 'Use letras, números e _ (sem começar com número).';
-      if (M.findTreeByName(p, val)) return 'Já existe uma árvore com esse nome.';
+    UI.prompt('Convert to subtree', 'Name of the new subtree', M.uniqueName('subtree', M.treeNames(p)), function (val) {
+      if (!M.C_IDENT_RE.test(val)) return 'Use letters, digits and _ (not starting with a digit).';
+      if (M.findTreeByName(p, val)) return 'A tree with this name already exists.';
       return null;
     }).then(function (name) {
       if (!name) return;
@@ -789,7 +789,7 @@
         M.deleteNode(v.tree, v.node.id);
         subNode = M.addNode(v.tree, M.makeNode('subtree', { ref: nt.id }), parentId, idx);
       });
-      if (subNode) { Store.select(subNode.id, v.ctx, v.tree.id); UI.toast('Subárvore "' + name + '" criada.', 'success'); }
+      if (subNode) { Store.select(subNode.id, v.ctx, v.tree.id); UI.toast('Subtree "' + name + '" created.', 'success'); }
     });
   }
 
@@ -841,13 +841,13 @@
   function link(childV, parentV, x) {
     var idx = childIndexAt(parentV, childV, x);
     var ok = Store.mutate(current.project.id, function () { return M.linkNode(parentV.tree, childV.node.id, parentV.node.id, idx); });
-    if (!ok) UI.toast('Ligação não permitida.', 'warning');
+    if (!ok) UI.toast('Link not allowed.', 'warning');
     else Store.select(childV.node.id, parentV.ctx, parentV.tree.id);
   }
 
   function openSubtree(v) {
     var ref = current.project.trees[v.node.props.ref];
-    if (!ref) { UI.toast('Esta SubTree não aponta para uma árvore válida.', 'warning'); return; }
+    if (!ref) { UI.toast('This SubTree does not point to a valid tree.', 'warning'); return; }
     Store.openTab(current.project.id, ref.id, childCtx(v.ctx, v.node.id));
   }
 
@@ -876,34 +876,34 @@
     var items = [];
     var edit = S.mode === 'editor' && !v.readonly;
     if (n.type === 'subtree') {
-      items.push({ label: 'Abrir subárvore', icon: 'external', shortcut: 'Duplo clique', action: function () { openSubtree(v); } });
-      items.push({ label: v.expanded ? 'Recolher' : 'Expandir aqui', icon: v.expanded ? 'collapse' : 'expand', shortcut: 'E', action: function () { toggleExpand(v); } });
+      items.push({ label: 'Open subtree', icon: 'external', shortcut: 'Double-click', action: function () { openSubtree(v); } });
+      items.push({ label: v.expanded ? 'Collapse' : 'Expand here', icon: v.expanded ? 'collapse' : 'expand', shortcut: 'E', action: function () { toggleExpand(v); } });
       items.push('-');
     }
     if (v.readonly) {
-      items.push({ label: 'Abrir ' + v.tree.name + ' para editar', icon: 'external', action: function () { openSubtree(findHost(v)); } });
-      items.push({ label: 'Centralizar', icon: 'target', action: function () { centerOn(v, true); } });
+      items.push({ label: 'Open ' + v.tree.name + ' to edit', icon: 'external', action: function () { openSubtree(findHost(v)); } });
+      items.push({ label: 'Center', icon: 'target', action: function () { centerOn(v, true); } });
       UI.contextMenu(x, y, items);
       return;
     }
     var many = selectedVNodes();
     if (edit && many.length > 1 && Store.isSelected(n.id, v.ctx)) {
       UI.contextMenu(x, y, [
-        { header: many.length + ' nós selecionados' },
-        { label: 'Copiar', icon: 'copy', shortcut: UI.kbd('Ctrl+C'), action: function () { copySelection(); } },
-        { label: 'Recortar', icon: 'scissors', shortcut: UI.kbd('Ctrl+X'), action: function () { copySelection(true); } },
-        { label: 'Duplicar', icon: 'duplicate', shortcut: UI.kbd('Ctrl+D'), action: duplicate },
+        { header: many.length + ' nodes selected' },
+        { label: 'Copy', icon: 'copy', shortcut: UI.kbd('Ctrl+C'), action: function () { copySelection(); } },
+        { label: 'Cut', icon: 'scissors', shortcut: UI.kbd('Ctrl+X'), action: function () { copySelection(true); } },
+        { label: 'Duplicate', icon: 'duplicate', shortcut: UI.kbd('Ctrl+D'), action: duplicate },
         '-',
-        { label: 'Excluir', icon: 'trash', shortcut: 'Del', danger: true, action: deleteSelection }
+        { label: 'Delete', icon: 'trash', shortcut: 'Del', danger: true, action: deleteSelection }
       ]);
       return;
     }
     if (edit) {
       var canChild = t.maxChildren > n.children.length;
       var isRoot = n.type === 'root';
-      if (canChild) items.push({ label: 'Adicionar filho', icon: 'plus', submenu: typeMenu(function () { return true; }, function (ty) { addChild(v, ty); }) });
-      if (v.parent && M.canAcceptChild(v.tree, v.parent.node.id, 'action')) items.push({ label: 'Adicionar irmão', icon: 'arrow-right', submenu: typeMenu(function () { return true; }, function (ty) { addSibling(v, ty, true); }) });
-      if (v.parent) items.push({ label: 'Envolver com', icon: 'wrap', submenu: typeMenu(function (ty) { return M.isDecorator(ty) || M.isControl(ty); }, function (ty) { wrapWith(v, ty); }) });
+      if (canChild) items.push({ label: 'Add child', icon: 'plus', submenu: typeMenu(function () { return true; }, function (ty) { addChild(v, ty); }) });
+      if (v.parent && M.canAcceptChild(v.tree, v.parent.node.id, 'action')) items.push({ label: 'Add sibling', icon: 'arrow-right', submenu: typeMenu(function () { return true; }, function (ty) { addSibling(v, ty, true); }) });
+      if (v.parent) items.push({ label: 'Wrap with', icon: 'wrap', submenu: typeMenu(function (ty) { return M.isDecorator(ty) || M.isControl(ty); }, function (ty) { wrapWith(v, ty); }) });
       var swapTypes = isRoot ? [] : Object.keys(T).filter(function (ty) {
         if (ty === n.type || ty === 'root' || ty === 'unknown') return false;
         var tt = T[ty];
@@ -912,29 +912,29 @@
         if (n.type === 'action' || n.type === 'condition') return ty === 'action' || ty === 'condition';
         return false;
       });
-      if (swapTypes.length) items.push({ label: 'Trocar tipo', icon: 'swap', submenu: typeMenu(function (ty) { return swapTypes.indexOf(ty) >= 0; }, function (ty) { changeTypeOf(v, ty); }) });
+      if (swapTypes.length) items.push({ label: 'Change type', icon: 'swap', submenu: typeMenu(function (ty) { return swapTypes.indexOf(ty) >= 0; }, function (ty) { changeTypeOf(v, ty); }) });
       if (items.length) items.push('-');
       if (!isRoot) {
-        items.push({ label: 'Copiar', icon: 'copy', shortcut: UI.kbd('Ctrl+C'), action: function () { copySelection(); } });
-        if (n.children.length) items.push({ label: 'Copiar ramificação', icon: 'copy', action: function () { copyBranch(v); } });
-        items.push({ label: 'Recortar', icon: 'scissors', shortcut: UI.kbd('Ctrl+X'), action: function () { copySelection(true); } });
+        items.push({ label: 'Copy', icon: 'copy', shortcut: UI.kbd('Ctrl+C'), action: function () { copySelection(); } });
+        if (n.children.length) items.push({ label: 'Copy branch', icon: 'copy', action: function () { copyBranch(v); } });
+        items.push({ label: 'Cut', icon: 'scissors', shortcut: UI.kbd('Ctrl+X'), action: function () { copySelection(true); } });
       }
-      items.push({ label: 'Colar', icon: 'paste', shortcut: UI.kbd('Ctrl+V'), disabled: !S.clipboard, action: function () { pasteInto(v); } });
-      if (!isRoot) items.push({ label: 'Duplicar', icon: 'duplicate', shortcut: UI.kbd('Ctrl+D'), action: duplicate });
+      items.push({ label: 'Paste', icon: 'paste', shortcut: UI.kbd('Ctrl+V'), disabled: !S.clipboard, action: function () { pasteInto(v); } });
+      if (!isRoot) items.push({ label: 'Duplicate', icon: 'duplicate', shortcut: UI.kbd('Ctrl+D'), action: duplicate });
       if (v.parent) {
         items.push('-');
-        if (n.type !== 'subtree') items.push({ label: 'Converter em subárvore…', icon: 'subtree', action: function () { extractSubtree(v); } });
-        items.push({ label: 'Desconectar do pai', icon: 'unplug', action: function () { disconnect(v); } });
+        if (n.type !== 'subtree') items.push({ label: 'Convert to subtree…', icon: 'subtree', action: function () { extractSubtree(v); } });
+        items.push({ label: 'Disconnect from parent', icon: 'unplug', action: function () { disconnect(v); } });
       }
       if (!isRoot) {
         items.push('-');
-        items.push({ label: 'Excluir', icon: 'trash', shortcut: 'Del', danger: true, action: deleteSelection });
-        if (n.children.length) items.push({ label: 'Excluir ramificação', icon: 'trash', danger: true, action: function () { deleteBranch(v); } });
+        items.push({ label: 'Delete', icon: 'trash', shortcut: 'Del', danger: true, action: deleteSelection });
+        if (n.children.length) items.push({ label: 'Delete branch', icon: 'trash', danger: true, action: function () { deleteBranch(v); } });
       }
     } else {
-      items.push({ label: 'Centralizar', icon: 'target', action: function () { centerOn(v, true); } });
-      if (t.field && t.field.kind === 'ident' && n.props.code) items.push({ label: 'Copiar nome da função', icon: 'copy', action: function () { UI.copyText(n.props.code, 'Copiado: ' + n.props.code); } });
-      if (S.mode === 'monitor') items.push({ label: 'Voltar ao Editor para modificar', icon: 'edit', action: function () { Store.setMode('editor'); } });
+      items.push({ label: 'Center', icon: 'target', action: function () { centerOn(v, true); } });
+      if (t.field && t.field.kind === 'ident' && n.props.code) items.push({ label: 'Copy function name', icon: 'copy', action: function () { UI.copyText(n.props.code, 'Copied: ' + n.props.code); } });
+      if (S.mode === 'monitor') items.push({ label: 'Back to Editor to modify', icon: 'edit', action: function () { Store.setMode('editor'); } });
     }
     UI.contextMenu(x, y, items);
   }
@@ -946,29 +946,29 @@
     Store.select(childV.node.id, childV.ctx, childV.tree.id);
     UI.contextMenu(x, y, [
       { header: T[childV.parent.node.type].label + ' → ' + T[childV.node.type].label },
-      { label: 'Inserir nó aqui', icon: 'wrap', submenu: typeMenu(function (ty) { return M.isDecorator(ty) || M.isControl(ty); }, function (ty) { wrapWith(childV, ty); }) },
-      { label: 'Desconectar', icon: 'unplug', danger: true, action: function () { disconnect(childV); } }
+      { label: 'Insert node here', icon: 'wrap', submenu: typeMenu(function (ty) { return M.isDecorator(ty) || M.isControl(ty); }, function (ty) { wrapWith(childV, ty); }) },
+      { label: 'Disconnect', icon: 'unplug', danger: true, action: function () { disconnect(childV); } }
     ]);
   }
 
   function canvasMenu(x, y) {
     var at = worldPoint(x, y);
     var items = [
-      { label: 'Ajustar à tela', icon: 'fit', shortcut: 'F', action: function () { fit(); } },
+      { label: 'Fit to screen', icon: 'fit', shortcut: 'F', action: function () { fit(); } },
       { label: 'Zoom 100%', icon: 'search', shortcut: '0', action: function () { view.s = 1; applyView(); } }
     ];
     if (S.mode === 'editor' && current) {
       items.push('-');
-      items.push({ label: 'Novo nó solto aqui', icon: 'plus', submenu: typeMenu(function () { return true; }, function (ty) { addLoose(ty, at); }) });
-      items.push({ label: 'Colar aqui (solto)', icon: 'paste', disabled: !S.clipboard, action: function () { pasteLoose(at); } });
+      items.push({ label: 'New loose node here', icon: 'plus', submenu: typeMenu(function () { return true; }, function (ty) { addLoose(ty, at); }) });
+      items.push({ label: 'Paste here (loose)', icon: 'paste', disabled: !S.clipboard, action: function () { pasteLoose(at); } });
       var root = current.root;
-      items.push({ label: 'Colar na Root', icon: 'paste', disabled: !S.clipboard || S.clipboard.length !== 1 || !M.canAcceptChild(current.tree, root.node.id, S.clipboard[0].type), action: function () { pasteInto(root); } });
-      items.push({ label: 'Expandir todas as subárvores', icon: 'expand', action: function () { setAllExpanded(true); } });
-      items.push({ label: 'Recolher todas as subárvores', icon: 'collapse', action: function () { setAllExpanded(false); } });
+      items.push({ label: 'Paste into Root', icon: 'paste', disabled: !S.clipboard || S.clipboard.length !== 1 || !M.canAcceptChild(current.tree, root.node.id, S.clipboard[0].type), action: function () { pasteInto(root); } });
+      items.push({ label: 'Expand all subtrees', icon: 'expand', action: function () { setAllExpanded(true); } });
+      items.push({ label: 'Collapse all subtrees', icon: 'collapse', action: function () { setAllExpanded(false); } });
     } else if (current) {
       items.push('-');
-      items.push({ label: 'Expandir todas as subárvores', icon: 'expand', action: function () { setAllExpanded(true); } });
-      items.push({ label: 'Recolher todas as subárvores', icon: 'collapse', action: function () { setAllExpanded(false); } });
+      items.push({ label: 'Expand all subtrees', icon: 'expand', action: function () { setAllExpanded(true); } });
+      items.push({ label: 'Collapse all subtrees', icon: 'collapse', action: function () { setAllExpanded(false); } });
     }
     UI.contextMenu(x, y, items);
   }
@@ -1051,7 +1051,7 @@
 
   function startPaletteDrag(type, e) {
     if (!guardEditor()) return;
-    if (!current) { UI.toast('Abra uma árvore primeiro.', 'warning'); return; }
+    if (!current) { UI.toast('Open a tree first.', 'warning'); return; }
     drag = { kind: 'palette', type: type, sx: e.clientX, sy: e.clientY, started: false, pointerId: e.pointerId };
   }
 
@@ -1113,17 +1113,17 @@
     var parentV = drag.from === 'out' ? drag.v : target, childV = drag.from === 'out' ? target : drag.v;
     var res = { target: target, zone: 'inside', link: true, parentV: parentV, childV: childV, ok: false };
     var pt = T[parentV.node.type];
-    if (target.readonly || parentV.tree !== childV.tree) res.reason = 'Nó de outra árvore';
-    else if (childV.node.type === 'root') res.reason = 'A Root não pode ter pai';
-    else if (M.isAncestor(parentV.tree, childV.node.id, parentV.node.id)) res.reason = 'Criaria um ciclo';
+    if (target.readonly || parentV.tree !== childV.tree) res.reason = 'Node from another tree';
+    else if (childV.node.type === 'root') res.reason = 'The Root cannot have a parent';
+    else if (M.isAncestor(parentV.tree, childV.node.id, parentV.node.id)) res.reason = 'Would create a cycle';
     else if (childV.node.parent !== parentV.node.id && !M.canAcceptChild(parentV.tree, parentV.node.id, childV.node.type)) {
-      res.reason = pt.maxChildren === 0 ? pt.label + ' não aceita filhos' : pt.label + ' já tem o máximo de filhos';
+      res.reason = pt.maxChildren === 0 ? pt.label + ' does not accept children' : pt.label + ' already has the maximum number of children';
     } else res.ok = true;
     return res;
   }
 
   function computeDrop(target, e) {
-    if (target.readonly) return { target: target, ok: false, reason: 'Nó de outra árvore' };
+    if (target.readonly) return { target: target, ok: false, reason: 'Node from another tree' };
     var type = drag.kind === 'node' ? drag.v.node.type : drag.type;
     var r = target.el.getBoundingClientRect();
     var fx = (e.clientX - r.left) / r.width;
@@ -1133,19 +1133,19 @@
     if (drag.kind === 'node') {
       if (drag.v.tree !== tree) return { target: target, ok: false };
       if (target === drag.v) return { target: target, self: true };
-      if (M.isAncestor(tree, drag.v.node.id, target.node.id) && !copy) return { target: target, zone: zone, ok: false, reason: 'Não pode soltar dentro de si mesmo' };
+      if (M.isAncestor(tree, drag.v.node.id, target.node.id) && !copy) return { target: target, zone: zone, ok: false, reason: 'Cannot drop inside itself' };
     }
     if (zone === 'inside') {
       var sameParent = drag.kind === 'node' && !copy && drag.v.node.parent === target.node.id;
       if (sameParent || M.canAcceptChild(tree, target.node.id, type)) return { target: target, zone: 'inside', ok: true, copy: copy };
       if (drag.kind === 'palette' && (M.isDecorator(type) || M.isControl(type)) && target.node.type !== 'root' && target.parent) return { target: target, zone: 'wrap', ok: true };
-      return { target: target, zone: 'inside', ok: false, reason: T[target.node.type].maxChildren === 0 ? T[target.node.type].label + ' não aceita filhos' : 'Limite de filhos atingido' };
+      return { target: target, zone: 'inside', ok: false, reason: T[target.node.type].maxChildren === 0 ? T[target.node.type].label + ' does not accept children' : 'Child limit reached' };
     }
     var parent = target.parent;
-    if (!parent || parent.readonly) return { target: target, zone: zone, ok: false, reason: 'Sem pai para inserir ao lado' };
+    if (!parent || parent.readonly) return { target: target, zone: zone, ok: false, reason: 'No parent to insert next to' };
     var same = drag.kind === 'node' && !copy && drag.v.node.parent === parent.node.id;
     var ok = same || M.canAcceptChild(tree, parent.node.id, type);
-    return { target: target, zone: zone, ok: ok, copy: copy, reason: ok ? '' : T[parent.node.type].label + ' não aceita mais filhos' };
+    return { target: target, zone: zone, ok: ok, copy: copy, reason: ok ? '' : T[parent.node.type].label + ' does not accept more children' };
   }
 
   // A linked node dropped on empty space is only reordered among its siblings (by x): moving a
@@ -1163,11 +1163,11 @@
   }
 
   function freeHint(d) {
-    if (drag.kind === 'palette') return 'Criar nó solto aqui';
-    if (drag.kind === 'link') return drag.from === 'out' ? 'Criar filho…' : (drag.v.parent ? 'Desconectar do pai' : 'Mover para cá');
-    if (d.copy) return 'Copiar como nó solto';
-    if (d.reorder) return d.bar ? 'Reordenar entre os irmãos' : 'Filho único: nada a reordenar';
-    return 'Mover para cá';
+    if (drag.kind === 'palette') return 'Create loose node here';
+    if (drag.kind === 'link') return drag.from === 'out' ? 'Create child…' : (drag.v.parent ? 'Disconnect from parent' : 'Move here');
+    if (d.copy) return 'Copy as loose node';
+    if (d.reorder) return d.bar ? 'Reorder among siblings' : 'Only child: nothing to reorder';
+    return 'Move here';
   }
 
   function showDropIndicator(d) {
@@ -1193,9 +1193,9 @@
     } else {
       Object.assign(dropIndicator.style, { left: (v.x - pad) + 'px', top: (v.y - pad) + 'px', width: (v.w + pad * 2) + 'px', height: (v.h + pad * 2) + 'px' });
     }
-    var hints = { inside: 'Adicionar como filho', before: 'Inserir antes', after: 'Inserir depois', wrap: 'Envolver este nó' };
-    var ok = d.link ? (drag.from === 'out' ? 'Ligar como filho' : 'Ligar a este pai') : (d.copy ? 'Copiar: ' : '') + hints[d.zone];
-    ghost.dataset.hint = d.ok ? ok : (d.reason || 'Não permitido');
+    var hints = { inside: 'Add as child', before: 'Insert before', after: 'Insert after', wrap: 'Wrap this node' };
+    var ok = d.link ? (drag.from === 'out' ? 'Link as child' : 'Link to this parent') : (d.copy ? 'Copy: ' : '') + hints[d.zone];
+    ghost.dataset.hint = d.ok ? ok : (d.reason || 'Not allowed');
     ghost.classList.toggle('bad', !d.ok);
   }
 
@@ -1232,7 +1232,7 @@
       if (d.kind === 'link' && d.from === 'out') {
         var r = d.port.getBoundingClientRect();
         if (window.BTCommand) window.BTCommand.quickAdd({ target: d.v, force: 'child', x: r.left + r.width / 2, y: r.bottom + 6 });
-        else UI.contextMenu(r.left, r.bottom + 4, [{ header: 'Adicionar filho a ' + T[d.v.node.type].label }].concat(typeMenu(all, function (ty) { addChild(d.v, ty); })));
+        else UI.contextMenu(r.left, r.bottom + 4, [{ header: 'Add child to ' + T[d.v.node.type].label }].concat(typeMenu(all, function (ty) { addChild(d.v, ty); })));
       }
       return;
     }
@@ -1243,7 +1243,7 @@
       if (d.kind === 'palette') { addLoose(d.type, p); return; }
       if (d.kind === 'link' && d.from === 'out') {
         if (window.BTCommand) window.BTCommand.quickAdd({ target: d.v, force: 'child', index: childIndexAt(d.v, null, p.x), x: e.clientX, y: e.clientY });
-        else UI.contextMenu(e.clientX, e.clientY, [{ header: 'Novo filho de ' + T[d.v.node.type].label }].concat(typeMenu(all, function (ty) { addChild(d.v, ty, childIndexAt(d.v, null, p.x)); })));
+        else UI.contextMenu(e.clientX, e.clientY, [{ header: 'New child of ' + T[d.v.node.type].label }].concat(typeMenu(all, function (ty) { addChild(d.v, ty, childIndexAt(d.v, null, p.x)); })));
         return;
       }
       if (d.kind === 'link') { disconnect(d.v, { x: p.x - d.v.w / 2, y: p.y }); return; }
@@ -1274,7 +1274,7 @@
       return;
     }
     var ok = Store.mutate(current.project.id, function () { return M.linkNode(d.v.tree, d.v.node.id, parentV.node.id, index); });
-    if (!ok) UI.toast('Movimento não permitido.', 'warning');
+    if (!ok) UI.toast('Move not allowed.', 'warning');
   }
 
   // Click on a palette item: add to the selected node (or as sibling / under root).
@@ -1286,7 +1286,7 @@
     if ((M.isDecorator(type)) && v.node.type !== 'root') { wrapWith(v, type); return; }
     if (v.parent && M.canAcceptChild(v.tree, v.parent.node.id, type)) { addSibling(v, type, true); return; }
     addLoose(type, viewCenter());
-    UI.toast('Nó criado solto. Ligue-o arrastando a bolinha de cima até o pai.', 'info', 3500);
+    UI.toast('Node created loose. Link it by dragging its top dot to the parent.', 'info', 3500);
   }
 
   function onDblClick(e) {

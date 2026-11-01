@@ -1,6 +1,6 @@
 /* BTree Studio - monitor timeline: every [BTREE] event of the open project as a bar.
  * Click/drag = go back in time, wheel = zoom, ,/. = step, Shift+,/. = previous/next failure,
- * Espaço = pause/replay, End = live. The lower track is an overview of the whole history. */
+ * Space = pause/replay, End = live. The lower track is an overview of the whole history. */
 (function () {
   'use strict';
   var M = window.BTModel, Store = window.BTStore, UI = window.BTUI, I = window.BTIcons;
@@ -130,10 +130,10 @@
     oc.fillRect(Math.min(OW - 2, m.q * k), 0, 2, OH);
 
     btnLive.hidden = m.live;
-    pos.textContent = m.live ? m.F.toLocaleString('pt-BR') + ' eventos' : m.q + ' / ' + m.F;
+    pos.textContent = m.live ? m.F.toLocaleString('en-US') + ' events' : m.q + ' / ' + m.F;
     btnPlay.innerHTML = I.icon(playing || m.live ? 'pause' : 'play', 15);
-    btnPlay.title = m.live ? 'Pausar e examinar o histórico (Espaço)' : playing ? 'Pausar reprodução (Espaço)' : 'Reproduzir a partir daqui (Espaço)';
-    updateBadge(m.live ? null : m.q + ' de ' + m.F);
+    btnPlay.title = m.live ? 'Pause and inspect the history (Space)' : playing ? 'Pause playback (Space)' : 'Play from here (Space)';
+    updateBadge(m.live ? null : m.q + ' of ' + m.F);
     placeTip(m, g);
   }
 
@@ -154,12 +154,12 @@
   function updateBadge(txt) {
     var badge = document.getElementById('monitorBadge');
     badge.classList.toggle('past', !!txt);
-    badgeTxt.textContent = txt ? 'Histórico — evento ' + txt : 'Monitor — edição bloqueada';
+    badgeTxt.textContent = txt ? 'History: event ' + txt : 'Monitor: editing locked';
   }
 
   function describe(o, html) {
-    if (!o) return '<span class="tl-muted">início do histórico</span>';
-    if (o.k === 'reset') return '<span class="tl-muted">— nova execução da árvore —</span>';
+    if (!o) return '<span class="tl-muted">start of history</span>';
+    if (o.k === 'reset') return '<span class="tl-muted">(new tree run)</span>';
     var p = Store.project(o.pid), tree = p && p.trees[o.treeId], n = tree && tree.nodes[o.nodeId];
     var t = n ? M.TYPES[n.type] : null;
     var body = n ? (t.field ? n.props[t.field.key] : n.props.label) || '' : '';
@@ -202,7 +202,7 @@
     for (var q = m.q + dir; q >= 1 && q <= m.F; q += dir) {
       if (m.ops[m.list[q - 1]].status === 'fail') { goTo(q, 'stay'); return; }
     }
-    UI.toast(dir < 0 ? 'Nenhuma falha antes deste ponto.' : 'Nenhuma falha depois deste ponto.', 'info', 1600);
+    UI.toast(dir < 0 ? 'No failure before this point.' : 'No failure after this point.', 'info', 1600);
   }
 
   function pause() { stop(); var m = model(); if (m.live && m.F) goTo(m.F, 'stay'); }

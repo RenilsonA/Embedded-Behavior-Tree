@@ -233,7 +233,7 @@
   function api(path, body) {
     var opts = body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
     return fetch(path, opts).then(function (r) { return r.json(); }).then(function (data) {
-      if (!data.ok) throw new Error(data.error || 'Erro no servidor');
+      if (!data.ok) throw new Error(data.error || 'Server error');
       return data;
     });
   }
@@ -259,9 +259,9 @@
   // Saves to disk (server) when available; always persists to the browser.
   function saveProject(id) {
     var p = project(id);
-    if (!p) return Promise.reject(new Error('Projeto não encontrado'));
+    if (!p) return Promise.reject(new Error('Project not found'));
     var loose = M.looseNodes(p).length;
-    if (loose) return Promise.reject(new Error(p.name + ': ' + loose + ' nó(s) solto(s). Ligue-os a um pai (ou exclua) para salvar.'));
+    if (loose) return Promise.reject(new Error(p.name + ': ' + loose + ' loose node(s). Link them to a parent (or delete them) to save.'));
     persistNow();
     if (!S.backend) {
       delete S.dirty[id];
@@ -386,7 +386,7 @@
         });
         Object.keys(byName).forEach(function (name) {
           try { result.push(projectFromDisk(byName[name])); summary.fromDisk += 1; }
-          catch (e) { console.error('Falha ao carregar ' + name, e); summary.error = (summary.error || '') + name + ': ' + e.message + ' '; }
+          catch (e) { console.error('Failed to load ' + name, e); summary.error = (summary.error || '') + name + ': ' + e.message + ' '; }
         });
         S.projects = result;
         return info;

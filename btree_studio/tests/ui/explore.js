@@ -56,7 +56,7 @@ const { chromium } = require('playwright-core');
   const e = await pg.evaluate(() => { const h = document.querySelector('.edge-hit'); const len = h.getTotalLength(); const p = h.getPointAtLength(len * 0.6); const m = h.getScreenCTM(); return { x: p.x * m.a + m.e, y: p.y * m.d + m.f }; });
   await pg.mouse.click(e.x, e.y, { button: 'right' }); await pg.waitForTimeout(200);
   const menu = await pg.locator('#ctxMenu').innerText();
-  ok('edge context menu', /Desconectar/.test(menu), menu.split('\n').slice(0, 3));
+  ok('edge context menu', /Disconnect/.test(menu), menu.split('\n').slice(0, 3));
   await pg.keyboard.press('Escape');
 
   // 8. text editing in inspector, then Ctrl+Z inside input should not break

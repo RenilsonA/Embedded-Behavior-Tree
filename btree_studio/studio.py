@@ -113,7 +113,7 @@ class LineSource:
         self.running = False
 
     def send(self, data: bytes):
-        raise RuntimeError("Esta fonte não aceita envio de dados.")
+        raise RuntimeError("This source does not accept sending data.")
 
     def _read_chunk(self):
         raise NotImplementedError
@@ -131,7 +131,7 @@ class LineSource:
                 break
             if chunk is None:  # end of stream
                 if self.running:
-                    HUB.publish({"type": "status", "connected": False, "error": "Fonte encerrada."})
+                    HUB.publish({"type": "status", "connected": False, "error": "Source closed."})
                 self.running = False
                 break
             if not chunk:
@@ -159,7 +159,7 @@ class SerialSource(LineSource):
     def __init__(self, port, baudrate):
         super().__init__()
         if not SERIAL_AVAILABLE:
-            raise RuntimeError("pyserial não está instalado (pip install pyserial).")
+            raise RuntimeError("pyserial is not installed (pip install pyserial).")
         self.ser = serial.Serial(port, baudrate=baudrate, timeout=0.1)
         self.description = f"{port} @ {baudrate}"
 
@@ -215,9 +215,9 @@ class JLinkSource(LineSource):
     def __init__(self, device, serial_no=None, speed=4000, rtt_address=None, channel=0):
         super().__init__()
         if not JLINK_AVAILABLE:
-            raise RuntimeError("pylink não está instalado (pip install pylink-square) ou o software J-Link da SEGGER está ausente.")
+            raise RuntimeError("pylink is not installed (pip install pylink-square) or SEGGER's J-Link software is missing.")
         if not device:
-            raise RuntimeError("Informe o dispositivo (ex.: STM32F411RE, nRF52840_xxAA).")
+            raise RuntimeError("Enter the device (e.g. STM32F411RE, nRF52840_xxAA).")
         self.lock = threading.Lock()  # reader thread and /api/send share the DLL
         self.channel = int(channel)
         self.jl = pylink.JLink()
@@ -234,7 +234,7 @@ class JLinkSource(LineSource):
                 except pylink.errors.JLinkRTTException:
                     pass
                 if time.time() > deadline:
-                    raise RuntimeError("Bloco de controle RTT não encontrado. O firmware usa SEGGER RTT? Informe o endereço de _SEGGER_RTT (arquivo .map).")
+                    raise RuntimeError("RTT control block not found. Does the firmware use SEGGER RTT? Enter the _SEGGER_RTT address (from the .map file).")
                 time.sleep(0.1)
         except Exception:
             self._close()
@@ -278,7 +278,7 @@ class ProcessSource(LineSource):
         super().__init__()
         args = shlex.split(command, posix=os.name != "nt")
         if not args:
-            raise RuntimeError("Comando vazio.")
+            raise RuntimeError("Empty command.")
         self.proc = subprocess.Popen(
             args,
             stdout=subprocess.PIPE,
@@ -334,7 +334,7 @@ class Bridge:
             elif kind == "process":
                 src = ProcessSource(cfg.get("command") or "")
             else:
-                raise RuntimeError(f"Tipo de conexão desconhecido: {kind}")
+                raise RuntimeError(f"Unknown connection type: {kind}")
             src.start()
             self.source = src
         HUB.publish({"type": "status", **self.status()})
@@ -352,7 +352,7 @@ class Bridge:
     def send(self, text):
         with self.lock:
             if self.source is None or not self.source.running:
-                raise RuntimeError("Nenhuma fonte conectada.")
+                raise RuntimeError("No source connected.")
             self.source.send(text.encode("utf-8"))
 
     def status(self):
@@ -409,7 +409,7 @@ class Workspace:
 
     def _project_dir(self, name):
         if not PROJECT_NAME_RE.match(name or ""):
-            raise RuntimeError("Nome de projeto inválido (use letras, números e _).")
+            raise RuntimeError("Invalid project name (use letters, digits and _).")
         return self.root / name
 
     def list(self):
@@ -459,7 +459,7 @@ class Workspace:
         src = self._project_dir(old)
         dst = self._project_dir(new)
         if dst.exists():
-            raise RuntimeError(f"Já existe um projeto chamado {new}.")
+            raise RuntimeError(f"A project named {new} already exists.")
         if src.is_dir():
             src.rename(dst)
             for suffix in (".xml", ".btproj"):
@@ -494,13 +494,13 @@ def generate_code(payload):
     tools/btree_<p>/ (array, common and the XML). With dryRun the files are generated in a
     temporary folder only to list them, marking the ones that already exist in <output>."""
     if not (SCRIPTS_DIR / "btree_array_creator.py").is_file():
-        raise RuntimeError(f"Gerador não encontrado em {SCRIPTS_DIR}.")
+        raise RuntimeError(f"Generator not found in {SCRIPTS_DIR}.")
     project = payload["project"]
     if not PROJECT_NAME_RE.match(project) or not C_IDENT_RE.match(project):
-        raise RuntimeError("Nome de projeto inválido para gerar código C (use letras, números e _).")
+        raise RuntimeError("Invalid project name for C code generation (use letters, digits and _).")
     prefix = (payload.get("prefix") or "").strip()
     if prefix and not C_IDENT_RE.match(prefix):
-        raise RuntimeError("Prefixo inválido: use letras, números e _ (sem começar com número).")
+        raise RuntimeError("Invalid prefix: use letters, digits and _ (not starting with a digit).")
     output = payload.get("output") or str(WORKSPACE.root / project / "generated")
     output = str(Path(output).expanduser().resolve())
     if payload.get("dryRun"):
@@ -512,7 +512,7 @@ def generate_code(payload):
     if FROZEN:  # inside the executable there is no interpreter: use the system Python
         python = shutil.which("python3") or shutil.which("python")
         if not python:
-            raise RuntimeError("Python não encontrado no PATH (necessário para o gerador de código C).")
+            raise RuntimeError("Python not found in PATH (needed by the C code generator).")
     with tempfile.TemporaryDirectory() as tmp:
         xml_path = Path(tmp) / f"{project}.xml"  # copied to tools/btree_<p>/<project>.xml
         xml_path.write_text(payload["xml"], encoding="utf-8")
@@ -537,7 +537,7 @@ def generate_code(payload):
             timeout=60,
         )
     if proc.returncode != 0:
-        raise RuntimeError((proc.stderr or proc.stdout or "Falha no gerador").strip()[-2000:])
+        raise RuntimeError((proc.stderr or proc.stdout or "Generator failed").strip()[-2000:])
     files = []
     for root, _dirs, names in os.walk(output):
         for n in names:
@@ -605,7 +605,7 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/events":
             return self._sse()
         if path.startswith("/api/"):
-            return self._error("Rota desconhecida.", HTTPStatus.NOT_FOUND)
+            return self._error("Unknown route.", HTTPStatus.NOT_FOUND)
         return super().do_GET()
 
     def do_POST(self):
@@ -644,7 +644,7 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json({"ok": True, **generate_code(body)})
         except Exception as exc:
             return self._error(str(exc))
-        return self._error("Rota desconhecida.", HTTPStatus.NOT_FOUND)
+        return self._error("Unknown route.", HTTPStatus.NOT_FOUND)
 
     def _sse(self):
         self.send_response(HTTPStatus.OK)
@@ -672,12 +672,12 @@ class Handler(SimpleHTTPRequestHandler):
 
 def main():
     global WORKSPACE, SCRIPTS_DIR
-    parser = argparse.ArgumentParser(description="BTree Studio - editor e depurador de Behavior Trees embarcadas")
-    parser.add_argument("--host", default="127.0.0.1", help="endereço de escuta (padrão 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=8765, help="porta HTTP (padrão 8765)")
-    parser.add_argument("--workspace", default=str(DEFAULT_WORKSPACE), help="pasta do workspace")
-    parser.add_argument("--scripts", default=None, help="pasta Scripts/ do Embedded-Behavior-Tree (gerador de código C)")
-    parser.add_argument("--no-browser", action="store_true", help="não abrir o navegador automaticamente")
+    parser = argparse.ArgumentParser(description="BTree Studio - editor and debugger for embedded Behavior Trees")
+    parser.add_argument("--host", default="127.0.0.1", help="listen address (default 127.0.0.1)")
+    parser.add_argument("--port", type=int, default=8765, help="HTTP port (default 8765)")
+    parser.add_argument("--workspace", default=str(DEFAULT_WORKSPACE), help="workspace folder")
+    parser.add_argument("--scripts", default=None, help="Embedded-Behavior-Tree Scripts/ folder (C code generator)")
+    parser.add_argument("--no-browser", action="store_true", help="do not open the browser automatically")
     args = parser.parse_args()
 
     WORKSPACE = Workspace(Path(args.workspace).expanduser().resolve())
@@ -689,11 +689,11 @@ def main():
     print(f"BTree Studio {VERSION}")
     print(f"  Interface : {url}")
     print(f"  Workspace : {WORKSPACE.root}")
-    print(f"  Serial    : {'pyserial OK' if SERIAL_AVAILABLE else 'pyserial ausente (pip install pyserial)'}")
-    print(f"  J-Link    : {'pylink OK' if JLINK_AVAILABLE else 'pylink ausente (pip install pylink-square)'}")
+    print(f"  Serial    : {'pyserial OK' if SERIAL_AVAILABLE else 'pyserial missing (pip install pyserial)'}")
+    print(f"  J-Link    : {'pylink OK' if JLINK_AVAILABLE else 'pylink missing (pip install pylink-square)'}")
     gen_ok = (SCRIPTS_DIR / "btree_array_creator.py").is_file()
-    print(f"  Gerador C : {SCRIPTS_DIR if gen_ok else 'indisponível (use --scripts <pasta Scripts>)'}")
-    print("  Ctrl+C para encerrar.")
+    print(f"  C generator: {SCRIPTS_DIR if gen_ok else 'unavailable (use --scripts <Scripts folder>)'}")
+    print("  Ctrl+C to quit.")
     if not args.no_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:

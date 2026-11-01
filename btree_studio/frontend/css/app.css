@@ -449,7 +449,7 @@ body.mode-monitor #monitorBadge { display: flex; }
 .empty-card p { color: var(--muted); margin: 0 0 20px; }
 .empty-card .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .empty-card svg { margin: 0 auto; display: block; }
-body.file-drop #canvasWrap::after { content: "Solte o arquivo XML para importar"; position: absolute; inset: 12px; border: 3px dashed var(--accent); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--accent-2); background: var(--accent-soft); }
+body.file-drop #canvasWrap::after { content: "Drop the XML file to import"; position: absolute; inset: 12px; border: 3px dashed var(--accent); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--accent-2); background: var(--accent-soft); }
 
 /* ------------------------------------------------------------------ buttons, inputs */
 .btn {
@@ -865,7 +865,7 @@ body.mode-monitor #timeline { display: flex; animation: dock-in .3s ease-out; }
 #hints .h-close:hover { background: var(--hover); color: var(--text); }
 body.mode-monitor #hints { bottom: auto; top: 48px; }
 
-/* user turned animations off (Ctrl+K › Animações) */
+/* user turned animations off (Ctrl+K › Turn animations off) */
 body.no-motion .node.entering, body.no-motion .node.leaving, body.no-motion .node.bump::after, body.no-motion .spark,
 body.no-motion .cmdk, body.no-motion #timeline, body.no-motion .live-dot { animation: none !important; }
 body.no-motion .node:hover { transform: none; }

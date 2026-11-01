@@ -176,7 +176,7 @@ class ARCHIVE_CREATOR:
             for i in item:
                 self.text     += i
         self.text         += "};\n\n"
-        self.text         += "#if BTREE_COMMON_DEBUG == 1\n"
+        self.text         += "#if BTREE_COMMON_DEBUG\n"
         self.text         += "/**\n"
         self.text         += f" * @brief Array containing the debug string names of the nodes of {self.project[:-1].lower()} tree.\n"
         self.text         += " *\n */\n"
@@ -211,7 +211,7 @@ class ARCHIVE_CREATOR:
         self.text         += f"    .nodes_status    = {self.prefix.lower()}btree_{self.project.lower()}status_nodes,\n"
         self.text         += f"    .array_attempts  = {self.prefix.lower()}btree_{self.project.lower()}common_attempts,\n"
         self.text         += f"    .tree            = {self.prefix.lower()}btree_{self.project.lower()}array,\n"
-        self.text         += f"#if BTREE_COMMON_DEBUG == 1\n"
+        self.text         += f"#if BTREE_COMMON_DEBUG\n"
         self.text         += f"    .debug           = &btree_{self.project.lower()}debug_item,\n"
         self.text         += "#else\n"
         self.text         += f"    .debug           = NULL,\n"

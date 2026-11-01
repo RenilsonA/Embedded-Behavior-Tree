@@ -65,13 +65,13 @@ int btree_common_delay_ms(uint32_t timeout_ms) {
   return 0;
 }
 
-/* Only required with BTREE_COMMON_DEBUG == 1: receives each ready [BTREE] line. */
+/* Only required when BTREE_COMMON_DEBUG is non-zero: receives each ready [BTREE] line. */
 void btree_common_debug_output(const char *line) {
   printf("%s", line);
 }
 ```
 
-The debug line itself is built by the library (`btree_common_debug_print()`), so its format is always the one BTree Studio reads; lines longer than `BTREE_COMMON_DEBUG_LINE_SIZE` (160) are truncated. Define `BTREE_COMMON_DEBUG` wherever suits your project (compiler flag or a header included before the library).
+The debug line itself is built by the library (`btree_common_debug_print()`), so its format is always the one BTree Studio reads; lines longer than `BTREE_COMMON_DEBUG_LINE_SIZE` (160) are truncated. Debug is on when `BTREE_COMMON_DEBUG` is defined with any non-zero value (`-DBTREE_COMMON_DEBUG` alone also works) and off when it is 0 or undefined; define it wherever suits your project (compiler flag or a header included before the library).
 
 **Node types.** Every type has a `REACTIVE_*` twin (re-evaluated on each tick, see [Reactive vs non-reactive](#reactive-vs-non-reactive-execution)) and a `BTREE_DEFINITION_CREATE_NODE_*` macro, which the generator emits for you. Sequences and fallbacks are not node types: they are compiled away into the `st`/`ft` edges.
 
@@ -171,7 +171,7 @@ cd btree_studio && python3 studio.py      # http://localhost:8765
 - **Debug live:** colors the tree from `[BTREE] | Tree: %s | Node: %d | Status: %s | Type: %s | Function: %s` lines. Enable `BTREE_COMMON_DEBUG` and define `btree_common_debug_output()`. A simulator and log replay are included.
 - **Go back in time:** every event lands on a timeline. Scrub it (or click a log line) to see the tree as it was, step event by event, or jump to the previous/next failure.
 
-Full guide (Portuguese): [`btree_studio/README.md`](btree_studio/README.md).
+Full guide: [`btree_studio/README.md`](btree_studio/README.md).
 
 ## Examples and validation
 

@@ -112,7 +112,7 @@ class ServerTest(unittest.TestCase):
             studio.HUB.unsubscribe(q)
             self.call("/api/disconnect", {})
 
-    @unittest.skipUnless((studio.SCRIPTS_DIR / "btree_array_creator.py").is_file(), "Scripts/ não encontrado")
+    @unittest.skipUnless((studio.SCRIPTS_DIR / "btree_array_creator.py").is_file(), "Scripts/ not found")
     def test_generate_code(self):
         out = Path(self.tmp.name) / "gen"
         res = self.call("/api/generate", {"project": "demo", "mainTree": "main", "xml": XML, "output": str(out)})

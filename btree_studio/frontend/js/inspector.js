@@ -62,7 +62,7 @@
     var parts = [];
     parts.push(el('div', { class: 'insp-head cat-' + t.cat }, [
       el('span', { class: 'big-icon', html: I.icon(t.icon, 20) }),
-      el('div', {}, [el('div', { class: 'insp-title', text: t.label }), el('div', { class: 'insp-sub', text: v.tree.name + (v.readonly ? ' (somente leitura aqui)' : '') })])
+      el('div', {}, [el('div', { class: 'insp-title', text: t.label }), el('div', { class: 'insp-sub', text: v.tree.name + (v.readonly ? ' (read-only here)' : '') })])
     ]));
     parts.push(el('p', { class: 'insp-desc', text: t.desc }));
     var ro = v.readonly || S.mode !== 'editor';
@@ -70,9 +70,9 @@
     if (v.readonly) {
       parts.push(el('div', { class: 'callout' }, [
         el('span', { html: I.icon('info', 16) }),
-        el('span', { text: 'Este nó pertence à subárvore "' + v.tree.name + '". Abra-a para editar.' })
+        el('span', { text: 'This node belongs to the subtree "' + v.tree.name + '". Open it to edit.' })
       ]));
-      parts.push(el('button', { class: 'btn', html: I.icon('external', 15) + 'Abrir ' + UI.esc(v.tree.name), onclick: function () {
+      parts.push(el('button', { class: 'btn', html: I.icon('external', 15) + 'Open ' + UI.esc(v.tree.name), onclick: function () {
         var h = v; while (h && !h.subtreeHost) h = h.parent;
         if (h) window.BTCanvas.openSubtree(h.subtreeHost);
       } }));
@@ -80,18 +80,18 @@
 
     var fields = [];
     if (t.cat === 'control') {
-      var lab = el('input', { class: 'input', value: n.props.label || '', placeholder: 'ex.: Patrulha', disabled: ro, spellcheck: 'false' });
+      var lab = el('input', { class: 'input', value: n.props.label || '', placeholder: 'e.g. Patrol', disabled: ro, spellcheck: 'false' });
       lab.addEventListener('input', function () {
         Store.mutate(project.id, function () { if (lab.value.trim()) n.props.label = lab.value; else delete n.props.label; }, 'label:' + n.id);
       });
-      fields.push(field('Rótulo da ramificação (opcional)', lab, { hint: 'Apenas para identificar esta ramificação no diagrama.' }));
+      fields.push(field('Branch label (optional)', lab, { hint: 'Only to identify this branch in the diagram.' }));
       focusTarget = lab;
     }
     if (t.field && t.field.kind === 'ident') {
       var inp = el('input', { class: 'input mono', value: n.props.code || '', placeholder: t.field.placeholder, disabled: ro, spellcheck: 'false', autocomplete: 'off' });
       var preview = el('code', { class: 'cpreview', text: cName(project, v.tree, n.props.code) });
       var f = field(t.field.label, inp, { required: true });
-      f.appendChild(el('div', { class: 'hint' }, ['Função gerada: ', preview]));
+      f.appendChild(el('div', { class: 'hint' }, ['Generated function: ', preview]));
       var check = function () { f.setError(M.fieldError(n.type, inp.value)); preview.textContent = cName(project, v.tree, inp.value.trim()); };
       inp.addEventListener('input', function () {
         // spaces are never valid in C names: convert them on the fly
@@ -128,8 +128,8 @@
       var row = el('div', { class: 'with-unit' }, [input, el('span', { class: 'unit', text: t.field.unit })]);
       fu = field(t.field.label, row, {
         required: true,
-        hint: 'Somente números, de ' + t.field.min + ' a ' + t.field.max.toLocaleString('pt-BR') +
-          (n.type === 'sleep' ? ' (uint32).' : ' (uint16, limite do firmware).') + ' Use ↑/↓ para ajustar.'
+        hint: 'Digits only, from ' + t.field.min + ' to ' + t.field.max.toLocaleString('en-US') +
+          (n.type === 'sleep' ? ' (uint32).' : ' (uint16, firmware limit).') + ' Use ↑/↓ to adjust.'
       });
       fu.setError = (function (orig) { return function (msg) { orig(msg); input.classList.toggle('invalid', !!msg); }; })(fu.setError);
       fu.setError(M.fieldError(n.type, n.props[t.field.key]));
@@ -140,7 +140,7 @@
     }
     if (n.type === 'subtree') {
       var sel = el('select', { class: 'input', disabled: ro });
-      sel.appendChild(el('option', { value: '', text: '— escolha a árvore —' }));
+      sel.appendChild(el('option', { value: '', text: '(choose the tree)' }));
       project.treeOrder.forEach(function (tid) {
         var tr = project.trees[tid];
         if (tr.id === v.tree.id) return;
@@ -150,14 +150,14 @@
       sel.addEventListener('change', function () {
         Store.mutate(project.id, function () { n.props.ref = sel.value; delete n.props.missingRef; });
       });
-      var fsub = field('Árvore chamada', sel, { required: true });
-      if (n.props.missingRef && !project.trees[n.props.ref]) fsub.setError('A árvore "' + n.props.missingRef + '" não existe neste projeto.');
+      var fsub = field('Called tree', sel, { required: true });
+      if (n.props.missingRef && !project.trees[n.props.ref]) fsub.setError('The tree "' + n.props.missingRef + '" does not exist in this project.');
       fields.push(fsub);
       focusTarget = sel;
       var actions = el('div', { class: 'btn-row' }, [
-        el('button', { class: 'btn sm', disabled: !project.trees[n.props.ref], html: I.icon('external', 14) + 'Abrir', onclick: function () { window.BTCanvas.openSubtree(v); } }),
-        el('button', { class: 'btn sm', disabled: !project.trees[n.props.ref], html: I.icon(v.expanded ? 'collapse' : 'expand', 14) + (v.expanded ? 'Recolher' : 'Expandir aqui'), onclick: function () { window.BTCanvas.toggleExpand(v); } }),
-        ro ? null : el('button', { class: 'btn sm', html: I.icon('plus', 14) + 'Nova árvore', onclick: function () {
+        el('button', { class: 'btn sm', disabled: !project.trees[n.props.ref], html: I.icon('external', 14) + 'Open', onclick: function () { window.BTCanvas.openSubtree(v); } }),
+        el('button', { class: 'btn sm', disabled: !project.trees[n.props.ref], html: I.icon(v.expanded ? 'collapse' : 'expand', 14) + (v.expanded ? 'Collapse' : 'Expand here'), onclick: function () { window.BTCanvas.toggleExpand(v); } }),
+        ro ? null : el('button', { class: 'btn sm', html: I.icon('plus', 14) + 'New tree', onclick: function () {
           window.BTApp.newTree(project.id, false).then(function (tr) {
             if (tr) Store.mutate(project.id, function () { n.props.ref = tr.id; delete n.props.missingRef; });
           });
@@ -168,50 +168,50 @@
     if (n.type === 'root') {
       var isMain = v.tree.id === project.mainTreeId;
       fields.push(el('div', { class: 'kv' }, [
-        el('span', { text: 'Árvore' }), el('b', { text: v.tree.name }),
-        el('span', { text: 'Papel' }), el('b', { html: isMain ? I.icon('star', 13, 'star') + ' Principal' : 'Subárvore' })
+        el('span', { text: 'Tree' }), el('b', { text: v.tree.name }),
+        el('span', { text: 'Role' }), el('b', { html: isMain ? I.icon('star', 13, 'star') + ' Main' : 'Subtree' })
       ]));
     }
     if (n.type === 'unknown') {
       fields.push(el('div', { class: 'kv' }, [el('span', { text: 'Tag XML' }), el('b', { class: 'mono', text: '<' + n.props.tag + '>' })]));
     }
-    if (fields.length) parts.push(section('Propriedades', fields));
+    if (fields.length) parts.push(section('Properties', fields));
 
     // structure / quick actions
     if (!ro && n.type !== 'root') {
       var C = window.BTCanvas;
       var btns = el('div', { class: 'btn-grid' }, [
-        t.maxChildren > n.children.length ? el('button', { class: 'btn sm', html: I.icon('plus', 14) + 'Filho', onclick: function (e) {
+        t.maxChildren > n.children.length ? el('button', { class: 'btn sm', html: I.icon('plus', 14) + 'Child', onclick: function (e) {
           var r = e.currentTarget.getBoundingClientRect();
           UI.contextMenu(r.left, r.bottom + 4, C.typeMenu(function () { return true; }, function (ty) { C.addChild(v, ty); }));
         } }) : null,
-        el('button', { class: 'btn sm', html: I.icon('wrap', 14) + 'Envolver', onclick: function (e) {
+        el('button', { class: 'btn sm', html: I.icon('wrap', 14) + 'Wrap', onclick: function (e) {
           var r = e.currentTarget.getBoundingClientRect();
           UI.contextMenu(r.left, r.bottom + 4, C.typeMenu(function (ty) { return M.isDecorator(ty) || M.isControl(ty); }, function (ty) { C.wrapWith(v, ty); }));
         } }),
-        el('button', { class: 'btn sm', html: I.icon('duplicate', 14) + 'Duplicar', onclick: function () { C.duplicate(); } }),
-        el('button', { class: 'btn sm danger-ghost', html: I.icon('trash', 14) + 'Excluir', onclick: function () { C.deleteSelection(); } })
+        el('button', { class: 'btn sm', html: I.icon('duplicate', 14) + 'Duplicate', onclick: function () { C.duplicate(); } }),
+        el('button', { class: 'btn sm danger-ghost', html: I.icon('trash', 14) + 'Delete', onclick: function () { C.deleteSelection(); } })
       ]);
-      parts.push(section('Ações', [btns]));
+      parts.push(section('Actions', [btns]));
     } else if (!ro && n.type === 'root' && n.children.length === 0) {
       var C2 = window.BTCanvas;
-      parts.push(section('Ações', [el('button', { class: 'btn sm', html: I.icon('plus', 14) + 'Adicionar filho', onclick: function (e) {
+      parts.push(section('Actions', [el('button', { class: 'btn sm', html: I.icon('plus', 14) + 'Add child', onclick: function (e) {
         var r = e.currentTarget.getBoundingClientRect();
         UI.contextMenu(r.left, r.bottom + 4, C2.typeMenu(function () { return true; }, function (ty) { C2.addChild(v, ty); }));
       } })]));
     }
 
-    var cap = t.maxChildren === Infinity ? 'mín. 1' : (t.maxChildren === 0 ? 'nenhum' : 'máx. ' + t.maxChildren);
-    var info = [el('span', { text: 'Filhos' }), el('b', { title: t.maxChildren === Infinity ? 'Aceita 1 ou mais filhos' : '', text: n.children.length + ' (' + cap + ')' })];
+    var cap = t.maxChildren === Infinity ? 'min. 1' : (t.maxChildren === 0 ? 'none' : 'max. ' + t.maxChildren);
+    var info = [el('span', { text: 'Children' }), el('b', { title: t.maxChildren === Infinity ? 'Accepts 1 or more children' : '', text: n.children.length + ' (' + cap + ')' })];
     if (M.isCompiled(n.type)) {
       var cur = window.BTCanvas.current();
       var order = M.compiledOrder(project);
       var idxs = [];
       order.forEach(function (e, i) { if (e.nodeId === n.id && (v.ctx === null || e.ctx === v.ctx)) idxs.push(i); });
-      info.push(el('span', { text: 'Índice no firmware' }), el('b', { class: 'mono', text: idxs.length ? '#' + idxs.join(', #') : '— (fora da árvore principal)' }));
-      if (cur) info.push(el('span', { text: 'Tree no log' }), el('b', { class: 'mono', text: M.logNameOf(project) }));
+      info.push(el('span', { text: 'Firmware index' }), el('b', { class: 'mono', text: idxs.length ? '#' + idxs.join(', #') : '(outside the main tree)' }));
+      if (cur) info.push(el('span', { text: 'Tree in log' }), el('b', { class: 'mono', text: M.logNameOf(project) }));
     }
-    parts.push(fold('Detalhes', [el('div', { class: 'kv' }, info)]));
+    parts.push(fold('Details', [el('div', { class: 'kv' }, info)]));
     return parts;
   }
 
@@ -222,15 +222,15 @@
     return [
       el('div', { class: 'insp-head cat-root' }, [
         el('span', { class: 'big-icon', html: I.icon('duplicate', 20) }),
-        el('div', {}, [el('div', { class: 'insp-title', text: vs.length + ' nós selecionados' }),
+        el('div', {}, [el('div', { class: 'insp-title', text: vs.length + ' nodes selected' }),
           el('div', { class: 'insp-sub', text: Object.keys(count).map(function (k) { return count[k] + '× ' + k; }).join(', ') })])
       ]),
-      section('Ações', [el('div', { class: 'btn-grid' }, [
-        el('button', { class: 'btn sm', html: I.icon('copy', 14) + 'Copiar', onclick: function () { C.copySelection(); } }),
-        el('button', { class: 'btn sm', html: I.icon('duplicate', 14) + 'Duplicar', onclick: function () { C.duplicate(); } }),
-        el('button', { class: 'btn sm danger-ghost', html: I.icon('trash', 14) + 'Excluir', onclick: function () { C.deleteSelection(); } })
+      section('Actions', [el('div', { class: 'btn-grid' }, [
+        el('button', { class: 'btn sm', html: I.icon('copy', 14) + 'Copy', onclick: function () { C.copySelection(); } }),
+        el('button', { class: 'btn sm', html: I.icon('duplicate', 14) + 'Duplicate', onclick: function () { C.duplicate(); } }),
+        el('button', { class: 'btn sm danger-ghost', html: I.icon('trash', 14) + 'Delete', onclick: function () { C.deleteSelection(); } })
       ])]),
-      el('p', { class: 'insp-desc', text: 'Copiar leva só estes nós, mantendo as ligações entre eles. Excluir remove só estes nós; os filhos que sobrarem ficam soltos.' })
+      el('p', { class: 'insp-desc', text: 'Copy takes only these nodes, keeping the links between them. Delete removes only these nodes; any remaining children become loose.' })
     ];
   }
 
@@ -243,15 +243,15 @@
     var parts = [];
     parts.push(el('div', { class: 'insp-head cat-root' }, [
       el('span', { class: 'big-icon', html: I.icon('tree', 20) }),
-      el('div', {}, [el('div', { class: 'insp-title', text: tree.name }), el('div', { class: 'insp-sub', html: isMain ? I.icon('star', 12, 'star') + ' Árvore principal' : 'Subárvore' })])
+      el('div', {}, [el('div', { class: 'insp-title', text: tree.name }), el('div', { class: 'insp-sub', html: isMain ? I.icon('star', 12, 'star') + ' Main tree' : 'Subtree' })])
     ]));
     var nodes = Object.keys(tree.nodes).length - 1;
-    parts.push(section('Árvore', [
-      el('div', { class: 'kv' }, [el('span', { text: 'Nós' }), el('b', { text: String(nodes) })]),
+    parts.push(section('Tree', [
+      el('div', { class: 'kv' }, [el('span', { text: 'Nodes' }), el('b', { text: String(nodes) })]),
       el('div', { class: 'btn-row' }, [
-        el('button', { class: 'btn sm', html: I.icon('rename', 14) + 'Renomear', onclick: function () { A.renameTree(project.id, tree.id); } }),
-        isMain ? null : el('button', { class: 'btn sm', html: I.icon('star', 14) + 'Definir como principal', onclick: function () { A.setMainTree(project.id, tree.id); } }),
-        el('button', { class: 'btn sm danger-ghost', disabled: isMain, title: isMain ? 'Defina outra árvore como principal antes de excluir esta.' : '', html: I.icon('trash', 14) + 'Excluir', onclick: function () { A.deleteTree(project.id, tree.id); } })
+        el('button', { class: 'btn sm', html: I.icon('rename', 14) + 'Rename', onclick: function () { A.renameTree(project.id, tree.id); } }),
+        isMain ? null : el('button', { class: 'btn sm', html: I.icon('star', 14) + 'Set as main', onclick: function () { A.setMainTree(project.id, tree.id); } }),
+        el('button', { class: 'btn sm danger-ghost', disabled: isMain, title: isMain ? 'Set another tree as main before deleting this one.' : '', html: I.icon('trash', 14) + 'Delete', onclick: function () { A.deleteTree(project.id, tree.id); } })
       ])
     ]));
 
@@ -262,34 +262,34 @@
     var order = M.compiledOrder(project);
     var issues = M.validateProject(project);
     var errs = issues.filter(function (i) { return i.level === 'error'; }).length;
-    parts.push(fold('Projeto', [
+    parts.push(fold('Project', [
       el('div', { class: 'kv' }, [
-        el('span', { text: 'Nome' }), el('b', { text: project.name }),
-        el('span', { text: 'Árvores' }), el('b', { text: String(project.treeOrder.length) }),
-        el('span', { text: 'Nós no firmware' }), el('b', { text: String(order.length) }),
-        el('span', { text: 'Problemas' }), el('b', { class: errs ? 'bad' : 'good', text: errs ? errs + ' erro(s)' : 'Nenhum erro' })
+        el('span', { text: 'Name' }), el('b', { text: project.name }),
+        el('span', { text: 'Trees' }), el('b', { text: String(project.treeOrder.length) }),
+        el('span', { text: 'Nodes in firmware' }), el('b', { text: String(order.length) }),
+        el('span', { text: 'Problems' }), el('b', { class: errs ? 'bad' : 'good', text: errs ? errs + ' error(s)' : 'No errors' })
       ]),
-      field('Nome no log (campo "Tree:")', logIn, { hint: 'O firmware imprime o nome do projeto em maiúsculas. Deixe vazio para usar <b>' + UI.esc(project.name.toUpperCase()) + '</b>.' }),
+      field('Name in log ("Tree:" field)', logIn, { hint: 'The firmware prints the project name in upper case. Leave empty to use <b>' + UI.esc(project.name.toUpperCase()) + '</b>.' }),
       el('div', { class: 'btn-row' }, [
-        el('button', { class: 'btn sm', html: I.icon('rename', 14) + 'Renomear projeto', onclick: function () { A.renameProject(project.id); } }),
-        el('button', { class: 'btn sm', html: I.icon('download', 14) + 'Exportar XML', onclick: function () { A.exportXml(project.id); } }),
-        S.backend && S.backend.generatorAvailable ? el('button', { class: 'btn sm', html: I.icon('code', 14) + 'Gerar código C', onclick: function () { A.generateCode(project.id); } }) : null
+        el('button', { class: 'btn sm', html: I.icon('rename', 14) + 'Rename project', onclick: function () { A.renameProject(project.id); } }),
+        el('button', { class: 'btn sm', html: I.icon('download', 14) + 'Export XML', onclick: function () { A.exportXml(project.id); } }),
+        S.backend && S.backend.generatorAvailable ? el('button', { class: 'btn sm', html: I.icon('code', 14) + 'Generate C code', onclick: function () { A.generateCode(project.id); } }) : null
       ])
     ]));
-    parts.push(el('button', { class: 'link-help', html: I.icon('help', 14) + 'Como editar a árvore? (F1)', onclick: function () { window.BTApp.help(); } }));
+    parts.push(el('button', { class: 'link-help', html: I.icon('help', 14) + 'How to edit the tree? (F1)', onclick: function () { window.BTApp.help(); } }));
     return parts;
   }
 
   /* ------------------------------------------------------------------ *
    * Monitor panel
    * ------------------------------------------------------------------ */
-  var STATUS_TXT = { running: 'Executando', success: 'Sucesso', fail: 'Falha', standby: 'Standby' };
+  var STATUS_TXT = { running: 'Running', success: 'Success', fail: 'Fail', standby: 'Standby' };
   function timeAgo(t) {
     var s = Math.round((Date.now() - t) / 1000);
-    if (s < 2) return 'agora';
-    if (s < 60) return 'há ' + s + ' s';
+    if (s < 2) return 'now';
+    if (s < 60) return s + ' s ago';
     var m = Math.round(s / 60);
-    return m < 60 ? 'há ' + m + ' min' : 'há ' + Math.round(m / 60) + ' h';
+    return m < 60 ? m + ' min ago' : Math.round(m / 60) + ' h ago';
   }
 
   function nodeLabel(project, ev) {
@@ -309,13 +309,13 @@
     var parts = [];
     parts.push(el('div', { class: 'insp-head cat-monitor' }, [
       el('span', { class: 'big-icon', html: I.icon('activity', 20) }),
-      el('div', {}, [el('div', { class: 'insp-title', text: 'Monitor' }), el('div', { class: 'insp-sub', text: conn.connected ? conn.label : 'Sem fonte de dados' })])
+      el('div', {}, [el('div', { class: 'insp-title', text: 'Monitor' }), el('div', { class: 'insp-sub', text: conn.connected ? conn.label : 'No data source' })])
     ]));
     if (!conn.connected) {
-      parts.push(el('div', { class: 'callout' }, [el('span', { html: I.icon('plug', 16) }), el('span', { html: 'Escolha uma fonte no painel <b>Terminal</b> (UART, SWD/RTT, Web Serial, simulação ou log salvo) e clique em Conectar.' })]));
-      parts.push(el('button', { class: 'btn primary', html: I.icon('plug', 15) + 'Abrir conexão', onclick: function () { window.BTApp.showBottom('terminal'); document.getElementById('srcKind').focus(); } }));
+      parts.push(el('div', { class: 'callout' }, [el('span', { html: I.icon('plug', 16) }), el('span', { html: 'Choose a source in the <b>Terminal</b> panel (UART, SWD/RTT, Web Serial, simulation or saved log) and click Connect.' })]));
+      parts.push(el('button', { class: 'btn primary', html: I.icon('plug', 15) + 'Open connection', onclick: function () { window.BTApp.showBottom('terminal'); document.getElementById('srcKind').focus(); } }));
     }
-    parts.push(section('Legenda', [el('div', { class: 'legend' }, ['running', 'success', 'fail', 'standby'].map(function (s) {
+    parts.push(section('Legend', [el('div', { class: 'legend' }, ['running', 'success', 'fail', 'standby'].map(function (s) {
       return el('div', { class: 'lg' }, [el('span', { class: 'sw st-' + s }), el('span', { text: STATUS_TXT[s] })]);
     }))]));
 
@@ -323,20 +323,20 @@
       var last = D.lastRunning();
       var lastEl = null;
       if (last && last.projectId === project.id) {
-        lastEl = el('button', { class: 'now-running', title: 'Localizar na árvore', onclick: function () { D.locate(last.projectId, last); } }, [
+        lastEl = el('button', { class: 'now-running', title: 'Locate in tree', onclick: function () { D.locate(last.projectId, last); } }, [
           el('span', { class: 'sw st-running pulse' }),
           el('span', { class: 'mono', text: '#' + last.index }),
           el('span', { class: 'nr-label', text: nodeLabel(project, last) })
         ]);
       }
-      parts.push(section('Executando agora', [lastEl || el('div', { class: 'hint', text: 'Nenhum nó executando ainda.' })]));
-      parts.push(fold('Estatísticas', [
+      parts.push(section('Running now', [lastEl || el('div', { class: 'hint', text: 'No node running yet.' })]));
+      parts.push(fold('Statistics', [
         el('div', { class: 'kv' }, [
-          el('span', { text: 'Projeto' }), el('b', { text: project.name }),
-          el('span', { text: 'Tree esperado no log' }), el('b', { class: 'mono', text: M.logNameOf(project) }),
-          el('span', { text: 'Linhas recebidas' }), el('b', { text: c.lines.toLocaleString('pt-BR') }),
-          el('span', { text: 'Eventos [BTREE]' }), el('b', { text: c.events.toLocaleString('pt-BR') }),
-          el('span', { text: 'Divergências' }), el('b', { class: c.mismatches ? 'bad' : '', title: 'Eventos cujo índice/tipo não bate com a árvore do Studio', text: String(c.mismatches) })
+          el('span', { text: 'Project' }), el('b', { text: project.name }),
+          el('span', { text: 'Expected Tree in log' }), el('b', { class: 'mono', text: M.logNameOf(project) }),
+          el('span', { text: 'Lines received' }), el('b', { text: c.lines.toLocaleString('en-US') }),
+          el('span', { text: '[BTREE] events' }), el('b', { text: c.events.toLocaleString('en-US') }),
+          el('span', { text: 'Mismatches' }), el('b', { class: c.mismatches ? 'bad' : '', title: 'Events whose index/type does not match the Studio tree', text: String(c.mismatches) })
         ])
       ]));
 
@@ -345,34 +345,34 @@
         var t = T[sv.node.type];
         var st = D.nodeStatus(project, sv.tree, sv.node.id, sv.ctx);
         var stats = M.isCompiled(sv.node.type) ? D.stats(project.id, sv.ctx === null ? null : sv.ctx, sv.node.id) : null;
-        var kv = [el('span', { text: 'Nó' }), el('b', { text: nodeLabel(project, { treeId: sv.tree.id, nodeId: sv.node.id }) }),
-          el('span', { text: 'Estado' }), el('b', {}, [el('span', { class: 'sw st-' + (st || 'standby') }), ' ' + STATUS_TXT[st || 'standby']])];
+        var kv = [el('span', { text: 'Node' }), el('b', { text: nodeLabel(project, { treeId: sv.tree.id, nodeId: sv.node.id }) }),
+          el('span', { text: 'State' }), el('b', {}, [el('span', { class: 'sw st-' + (st || 'standby') }), ' ' + STATUS_TXT[st || 'standby']])];
         if (stats) {
-          kv.push(el('span', { text: 'Running / Sucesso / Falha' }), el('b', { class: 'mono', text: stats.running + ' / ' + stats.success + ' / ' + stats.fail }));
-          kv.push(el('span', { text: 'Último evento' }), el('b', { text: timeAgo(stats.last) }));
+          kv.push(el('span', { text: 'Running / Success / Fail' }), el('b', { class: 'mono', text: stats.running + ' / ' + stats.success + ' / ' + stats.fail }));
+          kv.push(el('span', { text: 'Last event' }), el('b', { text: timeAgo(stats.last) }));
         }
-        parts.push(section('Selecionado — ' + t.label, [el('div', { class: 'kv' }, kv)]));
+        parts.push(section('Selected: ' + t.label, [el('div', { class: 'kv' }, kv)]));
       }
     }
 
     var follow = el('input', { type: 'checkbox', checked: !!S.settings.follow });
     follow.addEventListener('change', function () { Store.setSetting('follow', follow.checked); });
-    parts.push(fold('Opções', [
-      el('label', { class: 'chk' }, [follow, 'Seguir o nó em execução']),
+    parts.push(fold('Options', [
+      el('label', { class: 'chk' }, [follow, 'Follow the running node']),
       el('div', { class: 'btn-row' }, [
-        el('button', { class: 'btn sm', html: I.icon('reset', 14) + 'Resetar estados', onclick: function () { D.resetStatuses(); } }),
-        el('button', { class: 'btn sm', html: I.icon('expand', 14) + 'Expandir subárvores', onclick: function () { window.BTCanvas.setAllExpanded(true); } })
+        el('button', { class: 'btn sm', html: I.icon('reset', 14) + 'Reset states', onclick: function () { D.resetStatuses(); } }),
+        el('button', { class: 'btn sm', html: I.icon('expand', 14) + 'Expand subtrees', onclick: function () { window.BTCanvas.setAllExpanded(true); } })
       ])
     ]));
 
     var rec = D.recent().filter(function (e) { return !project || e.projectId === project.id; }).slice(0, 25);
     if (rec.length && project) {
-      parts.push(fold('Últimas transições', [el('div', { class: 'recent' }, rec.map(function (e) {
-        return el('button', { class: 'rc', title: 'Localizar', onclick: function () { D.locate(e.projectId, e); } }, [
+      parts.push(fold('Latest transitions', [el('div', { class: 'recent' }, rec.map(function (e) {
+        return el('button', { class: 'rc', title: 'Locate', onclick: function () { D.locate(e.projectId, e); } }, [
           el('span', { class: 'sw st-' + e.status }),
           el('span', { class: 'mono idx', text: '#' + e.index }),
           el('span', { class: 'rc-label', text: nodeLabel(project, e) }),
-          el('span', { class: 'rc-time', text: new Date(e.time).toLocaleTimeString('pt-BR') })
+          el('span', { class: 'rc-time', text: new Date(e.time).toLocaleTimeString('en-US') })
         ]);
       }))]));
     }
@@ -399,7 +399,7 @@
       if (many.length > 1 && project) parts = renderMany(many);
       else if (v && project) parts = renderNode(v, project);
       else if (tree) parts = renderTree(tree, project);
-      else parts = [el('div', { class: 'insp-empty' }, [el('span', { html: I.icon('tree', 28) }), el('p', { text: 'Abra uma árvore no workspace para ver as propriedades.' })])];
+      else parts = [el('div', { class: 'insp-empty' }, [el('span', { html: I.icon('tree', 28) }), el('p', { text: 'Open a tree in the workspace to see its properties.' })])];
     }
     parts.forEach(function (p) { if (p) box.appendChild(p); });
     if (same) box.scrollTop = scroll;

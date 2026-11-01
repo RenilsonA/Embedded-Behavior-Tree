@@ -37,7 +37,7 @@ Sequence
 | `btree_port.c` | hand | the two platform functions the library requires: `btree_common_delay_ms()` and `btree_common_debug_output()` |
 | `main.c` | hand | the tick loop, using `btree_manager_tick()` with callbacks |
 
-The library is used straight from [`btree-lib/`](../../btree-lib), with no copy. To regenerate the tree code after changing the XML, use **Gerar código C** in BTree Studio with this folder as output, or run from `Scripts/` (your leaf code and blackboard are kept; only new functions are added):
+The library is used straight from [`btree-lib/`](../../btree-lib), with no copy. To regenerate the tree code after changing the XML, use **Generate C code** in BTree Studio with this folder as output, or run from `Scripts/` (your leaf code and blackboard are kept; only new functions are added):
 
 ```python
 from btree_array_creator import BTREE_ARRAY
@@ -48,10 +48,10 @@ x.create_trees(archive="../examples/c99/tools/btree_robot/delivery.xml", output=
 
 ## Watching it in BTree Studio
 
-The `[BTREE] | Tree: ROBOT | ...` lines are the format BTree Studio reads. Open `tools/btree_robot/delivery.xml` in a Studio project named `robot` (or set its *Nome no log* to `ROBOT`), press `F3` for the Monitor, and then:
+The `[BTREE] | Tree: ROBOT | ...` lines are the format BTree Studio reads. Open `tools/btree_robot/delivery.xml` in a Studio project named `robot` (or set its *Name in log* to `ROBOT`), press `F3` for the Monitor, and then:
 
-- **Live:** in the Terminal, choose the *External command* source with `/full/path/to/examples/c99/delivery 300` and click **Conectar**. The tree animates as the program runs, one tick every 300 ms.
-- **Replay:** save a run with `./delivery > run.log` and replay the file (Terminal › replay log).
+- **Live:** in the Terminal, choose the *External command* source with `/full/path/to/examples/c99/delivery 300` and click **Connect**. The tree animates as the program runs, one tick every 300 ms.
+- **Replay:** save a run with `./delivery > run.log` and replay the file (Terminal › Replay log).
 
 ## On a microcontroller
 

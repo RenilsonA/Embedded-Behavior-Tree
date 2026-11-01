@@ -1,4 +1,4 @@
-/* BTree Studio - command palette (Ctrl+K) and quick-add (Espaço/Tab, duplo clique no vazio, "+" do nó).
+/* BTree Studio - command palette (Ctrl+K) and quick-add (Space/Tab, double-click on empty space, the node "+").
  * Type to filter; "action mover_braco" creates the Action already with the function name,
  * "sleep 500" a Sleep of 500 ms, "retry 3" a Retry with 3 attempts. */
 (function () {
@@ -34,22 +34,22 @@
   function plan(type) {
     var cur = C().current();
     if (!cur) return null;
-    if (ctx.at) return { how: 'loose', text: 'nó solto aqui', run: function (props) { C().addLoose(type, ctx.at, props); } };
+    if (ctx.at) return { how: 'loose', text: 'loose node here', run: function (props) { C().addLoose(type, ctx.at, props); } };
     var v = ctx.target || C().selectedVNode() || cur.root;
     if (v.readonly) v = cur.root;
     var label = T[v.node.type].label;
     if (ctx.force === 'child' || M.canAcceptChild(v.tree, v.node.id, type)) {
       if (!M.canAcceptChild(v.tree, v.node.id, type)) return null;
-      return { how: 'child', text: 'filho de ' + label, run: function (props) { C().addChild(v, type, ctx.index, props); } };
+      return { how: 'child', text: 'child of ' + label, run: function (props) { C().addChild(v, type, ctx.index, props); } };
     }
     if ((M.isDecorator(type) || M.isControl(type)) && v.node.type !== 'root' && v.parent) {
-      return { how: 'wrap', text: 'envolver ' + label, run: function (props) { C().wrapWith(v, type, props); } };
+      return { how: 'wrap', text: 'wrap ' + label, run: function (props) { C().wrapWith(v, type, props); } };
     }
     if (v.parent && M.canAcceptChild(v.tree, v.parent.node.id, type)) {
-      return { how: 'sibling', text: 'depois de ' + label, run: function (props) { C().addSibling(v, type, true, props); } };
+      return { how: 'sibling', text: 'after ' + label, run: function (props) { C().addSibling(v, type, true, props); } };
     }
     var at = C().viewCenter();
-    return { how: 'loose', text: 'nó solto', run: function (props) { C().addLoose(type, at, props); } };
+    return { how: 'loose', text: 'loose node', run: function (props) { C().addLoose(type, at, props); } };
   }
 
   // "sibling" alternative for Shift+Enter
@@ -65,7 +65,7 @@
     var f = T[type].field;
     if (!f || !raw) return null;
     if (f.kind === 'ident') return M.C_IDENT_RE.test(raw) ? { key: f.key, value: raw, show: raw + '()' } : null;
-    if (f.kind === 'uint') return /^\d+$/.test(raw) ? { key: f.key, value: String(Number(raw)), show: Number(raw).toLocaleString('pt-BR') + (f.unit ? ' ' + f.unit : '') } : null;
+    if (f.kind === 'uint') return /^\d+$/.test(raw) ? { key: f.key, value: String(Number(raw)), show: Number(raw).toLocaleString('en-US') + (f.unit ? ' ' + f.unit : '') } : null;
     return null;
   }
 
@@ -86,7 +86,7 @@
       var pl = plan(type);
       if (!pl) return;
       out.push({
-        group: 'Adicionar nó', icon: t.icon, cat: t.cat, label: t.label, score: sc,
+        group: 'Add node', icon: t.icon, cat: t.cat, label: t.label, score: sc,
         param: param ? param.show : '', detail: pl.text, desc: t.desc,
         run: function (shift) {
           var props = param ? {} : undefined;
@@ -109,7 +109,7 @@
       var sc = bestScore(q, [v.body || '', t.label + ' ' + (v.body || '')]);
       if (sc < 4) return;
       out.push({
-        group: 'Ir para nó', icon: t.icon, cat: t.cat, label: v.body || t.label, detail: t.label + (v.readonly ? ' · ' + v.tree.name : ''), score: sc - 2,
+        group: 'Go to node', icon: t.icon, cat: t.cat, label: v.body || t.label, detail: t.label + (v.readonly ? ' · ' + v.tree.name : ''), score: sc - 2,
         run: function () { C().revealNode(v.node.id, v.ctx); C().centerOn(v, true); }
       });
     });
@@ -121,9 +121,9 @@
     S.projects.forEach(function (p) {
       p.treeOrder.forEach(function (tid) {
         var tr = p.trees[tid], main = tid === p.mainTreeId;
-        var sc = bestScore(q, [tr.name, p.name + ' ' + tr.name, 'abrir ' + tr.name]);
+        var sc = bestScore(q, [tr.name, p.name + ' ' + tr.name, 'open ' + tr.name]);
         if (!sc) return;
-        out.push({ group: 'Árvores', icon: main ? 'star' : 'subtree', label: tr.name, detail: p.name + (main ? ' · principal' : ''), score: sc - 1,
+        out.push({ group: 'Trees', icon: main ? 'star' : 'subtree', label: tr.name, detail: p.name + (main ? ' · main' : ''), score: sc - 1,
           run: function () { Store.openTab(p.id, tid, main ? '' : null); } });
       });
     });
@@ -133,28 +133,28 @@
   function actions() {
     var A = window.BTApp, D = window.BTDebug, editor = S.mode === 'editor';
     var list = [
-      { label: 'Ajustar à tela', icon: 'fit', key: 'F', run: function () { C().fit(); } },
-      { label: editor ? 'Ir para o Monitor' : 'Ir para o Editor', icon: editor ? 'activity' : 'edit', key: editor ? 'F3' : 'F2', run: function () { Store.setMode(editor ? 'monitor' : 'editor'); } },
-      { label: 'Simular a árvore principal', icon: 'play', run: function () { document.getElementById('srcKind').value = 'sim'; document.getElementById('srcKind').dispatchEvent(new Event('change')); if (D.conn().connected) D.disconnect(); setTimeout(function () { D.connect(); A.showBottom('terminal'); }, 30); } },
-      { label: 'Salvar', icon: 'save', key: 'Ctrl+S', run: A.save },
-      { label: 'Desfazer', icon: 'undo', key: 'Ctrl+Z', run: function () { Store.undo(); } },
-      { label: 'Refazer', icon: 'redo', key: 'Ctrl+Y', run: function () { Store.redo(); } },
-      { label: 'Expandir todas as subárvores', icon: 'expand', run: function () { C().setAllExpanded(true); } },
-      { label: 'Recolher todas as subárvores', icon: 'collapse', run: function () { C().setAllExpanded(false); } },
-      { label: 'Mostrar/ocultar índices do firmware', icon: 'code', key: '#', run: function () { Store.setSetting('showIndex', !S.settings.showIndex); } },
-      { label: S.settings.motion === false ? 'Ligar animações' : 'Desligar animações', icon: 'sparkles', run: function () { Store.setSetting('motion', S.settings.motion === false); } },
-      { label: S.settings.hints === false ? 'Mostrar dicas no canto' : 'Ocultar dicas no canto', icon: 'help', run: function () { Store.setSetting('hints', S.settings.hints === false); } },
-      { label: 'Mostrar/ocultar minimapa', icon: 'map', run: function () { Store.setSetting('minimap', S.settings.minimap === false); } },
-      { label: 'Alternar tema claro/escuro', icon: S.settings.theme === 'dark' ? 'sun' : 'moon', run: function () { Store.setSetting('theme', S.settings.theme === 'dark' ? 'light' : 'dark'); } },
-      { label: 'Novo projeto…', icon: 'plus', run: A.newProject },
-      { label: 'Nova subárvore…', icon: 'tree-plus', run: function () { A.newTree(); } },
-      { label: 'Abrir XML / .btproj…', icon: 'folder', key: 'Ctrl+O', run: function () { document.getElementById('fileOpen').click(); } },
-      { label: 'Exportar XML', icon: 'download', run: function () { A.exportXml(); } },
-      { label: 'Gerar código C…', icon: 'code', run: function () { A.generateCode(); } },
-      { label: 'Abrir exemplo', icon: 'sparkles', run: A.loadExample },
-      { label: 'Ajuda e atalhos', icon: 'help', key: 'F1', run: A.help }
+      { label: 'Fit to screen', icon: 'fit', key: 'F', run: function () { C().fit(); } },
+      { label: editor ? 'Go to Monitor' : 'Go to Editor', icon: editor ? 'activity' : 'edit', key: editor ? 'F3' : 'F2', run: function () { Store.setMode(editor ? 'monitor' : 'editor'); } },
+      { label: 'Simulate the main tree', icon: 'play', run: function () { document.getElementById('srcKind').value = 'sim'; document.getElementById('srcKind').dispatchEvent(new Event('change')); if (D.conn().connected) D.disconnect(); setTimeout(function () { D.connect(); A.showBottom('terminal'); }, 30); } },
+      { label: 'Save', icon: 'save', key: 'Ctrl+S', run: A.save },
+      { label: 'Undo', icon: 'undo', key: 'Ctrl+Z', run: function () { Store.undo(); } },
+      { label: 'Redo', icon: 'redo', key: 'Ctrl+Y', run: function () { Store.redo(); } },
+      { label: 'Expand all subtrees', icon: 'expand', run: function () { C().setAllExpanded(true); } },
+      { label: 'Collapse all subtrees', icon: 'collapse', run: function () { C().setAllExpanded(false); } },
+      { label: 'Show/hide firmware indices', icon: 'code', key: '#', run: function () { Store.setSetting('showIndex', !S.settings.showIndex); } },
+      { label: S.settings.motion === false ? 'Turn animations on' : 'Turn animations off', icon: 'sparkles', run: function () { Store.setSetting('motion', S.settings.motion === false); } },
+      { label: S.settings.hints === false ? 'Show corner hints' : 'Hide corner hints', icon: 'help', run: function () { Store.setSetting('hints', S.settings.hints === false); } },
+      { label: 'Show/hide minimap', icon: 'map', run: function () { Store.setSetting('minimap', S.settings.minimap === false); } },
+      { label: 'Toggle light/dark theme', icon: S.settings.theme === 'dark' ? 'sun' : 'moon', run: function () { Store.setSetting('theme', S.settings.theme === 'dark' ? 'light' : 'dark'); } },
+      { label: 'New project…', icon: 'plus', run: A.newProject },
+      { label: 'New subtree…', icon: 'tree-plus', run: function () { A.newTree(); } },
+      { label: 'Open XML / .btproj…', icon: 'folder', key: 'Ctrl+O', run: function () { document.getElementById('fileOpen').click(); } },
+      { label: 'Export XML', icon: 'download', run: function () { A.exportXml(); } },
+      { label: 'Generate C code…', icon: 'code', run: function () { A.generateCode(); } },
+      { label: 'Open example', icon: 'sparkles', run: A.loadExample },
+      { label: 'Help and shortcuts', icon: 'help', key: 'F1', run: A.help }
     ];
-    return list.map(function (a) { a.group = 'Comandos'; return a; });
+    return list.map(function (a) { a.group = 'Commands'; return a; });
   }
 
   function build() {
@@ -175,7 +175,7 @@
 
   function render() {
     listEl.innerHTML = '';
-    if (!items.length) { listEl.appendChild(UI.el('div', { class: 'cmd-empty', text: 'Nada encontrado.' })); return; }
+    if (!items.length) { listEl.appendChild(UI.el('div', { class: 'cmd-empty', text: 'Nothing found.' })); return; }
     var lastGroup = null;
     // with a query results are ranked, so groups only show when browsing
     var showGroups = !input.value.trim() && ctx.mode !== 'add';
@@ -200,8 +200,8 @@
     if (rows[sel]) rows[sel].scrollIntoView({ block: 'nearest' });
     var it = items[sel];
     footer.innerHTML = it && it.desc ? UI.esc(it.desc) : (ctx.mode === 'add'
-      ? 'Digite <kbd>action nome_da_funcao</kbd>, <kbd>sleep 500</kbd>, <kbd>retry 3</kbd>… · <kbd>Shift+Enter</kbd> irmão'
-      : '<kbd>↑↓</kbd> navegar · <kbd>Enter</kbd> executar · <kbd>Esc</kbd> fechar');
+      ? 'Type <kbd>action function_name</kbd>, <kbd>sleep 500</kbd>, <kbd>retry 3</kbd>… · <kbd>Shift+Enter</kbd> sibling'
+      : '<kbd>↑↓</kbd> navigate · <kbd>Enter</kbd> run · <kbd>Esc</kbd> close');
   }
 
   function choose(i, shift) {
@@ -231,10 +231,10 @@
     var head = root.querySelector('.cmd-head');
     if (ctx.mode === 'add') {
       var v = ctx.target || C().selectedVNode();
-      head.textContent = ctx.at ? 'Novo nó solto' : ctx.force === 'child' && v ? 'Novo filho de ' + T[v.node.type].label + (v.body ? ' ' + v.body : '') : 'Adicionar nó';
+      head.textContent = ctx.at ? 'New loose node' : ctx.force === 'child' && v ? 'New child of ' + T[v.node.type].label + (v.body ? ' ' + v.body : '') : 'Add node';
       head.hidden = false;
-      input.placeholder = 'Tipo do nó… (ex.: action abrir_porta)';
-    } else { head.hidden = true; input.placeholder = 'Buscar comando, nó, árvore ou função…'; }
+      input.placeholder = 'Node type… (e.g. action open_door)';
+    } else { head.hidden = true; input.placeholder = 'Find command, node, tree or function…'; }
     if (ctx.x !== undefined) {
       var w = 340, h = 360;
       root.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, ctx.x - 30)) + 'px';
@@ -246,7 +246,7 @@
   }
 
   function quickAdd(opts) {
-    if (S.mode !== 'editor') { UI.toast('Mude para o modo Editor para adicionar nós.', 'warning'); return; }
+    if (S.mode !== 'editor') { UI.toast('Switch to Editor mode to add nodes.', 'warning'); return; }
     if (!C().current()) return;
     if (opts.target && opts.target.readonly) return;
     open(Object.assign({ mode: 'add' }, opts));

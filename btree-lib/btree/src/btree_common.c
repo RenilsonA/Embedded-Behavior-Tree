@@ -28,11 +28,11 @@
 
 #include "btree_common.h"
 
-#if BTREE_COMMON_DEBUG == 1
+#if BTREE_COMMON_DEBUG
 #include <stdio.h>
 #endif
 
-#if BTREE_COMMON_DEBUG == 1
+#if BTREE_COMMON_DEBUG
 
 /**
  * @brief Array of status to debug.

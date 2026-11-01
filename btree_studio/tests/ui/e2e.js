@@ -25,7 +25,7 @@ const SP = __dirname;
   // 2) save is blocked
   await pg.click('#btnSave'); await pg.waitForTimeout(300);
   const modal = await pg.locator('#modalRoot').innerText(); console.log('modal:', modal.split('\n')[0]);
-  if (!/nós soltos/.test(modal)) throw new Error('save not blocked');
+  if (!/loose nodes/.test(modal)) throw new Error('save not blocked');
   await pg.screenshot({ path: require('os').tmpdir() + '/btstudio-1-loose.png' });
   await pg.keyboard.press('Escape'); await pg.waitForTimeout(200);
 
@@ -72,7 +72,7 @@ const SP = __dirname;
   // 6) save now works
   await pg.click('#btnSave'); await pg.waitForTimeout(600);
   const toasts = await pg.locator('#toasts').innerText(); console.log('toast:', toasts.split('\n').slice(-1)[0]);
-  if (!/Salvo/.test(toasts)) throw new Error('save failed');
+  if (!/Saved/.test(toasts)) throw new Error('save failed');
   await pg.screenshot({ path: require('os').tmpdir() + '/btstudio-2-linked.png' });
 
   // 7) monitor: stale states after the running node are cleared

@@ -9,12 +9,12 @@
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<root BTCPP_format="4" main_tree_to_execute="main" project_name="robot">',
     '  <BehaviorTree ID="main">',
-    '    <ReactiveFallback name="Robo">',
-    '      <Sequence name="Bateria baixa">',
+    '    <ReactiveFallback name="Robot">',
+    '      <Sequence name="Low battery">',
     '        <ScriptCondition code="is_battery_low"/>',
     '        <SubTree ID="go_charge"/>',
     '      </Sequence>',
-    '      <Sequence name="Patrulha">',
+    '      <Sequence name="Patrol">',
     '        <Script code="move_to_a"/>',
     '        <Sleep msec="1500"/>',
     '        <RetryUntilSuccessful num_attempts="3">',
@@ -51,8 +51,8 @@
    * Validators
    * ------------------------------------------------------------------ */
   function identError(v) {
-    if (!v) return 'Obrigatório.';
-    if (!M.C_IDENT_RE.test(v)) return 'Use letras, números e _ (sem começar com número e sem espaços).';
+    if (!v) return 'Required.';
+    if (!M.C_IDENT_RE.test(v)) return 'Use letters, digits and _ (not starting with a digit, no spaces).';
     return null;
   }
 
@@ -60,22 +60,22 @@
    * Projects & trees
    * ------------------------------------------------------------------ */
   function newProject() {
-    return UI.prompt('Novo projeto', 'Nome do projeto', M.uniqueName('projeto', Store.projectNames()), function (v) {
-      return identError(v) || (Store.projectNames().indexOf(v) >= 0 ? 'Já existe um projeto com esse nome.' : null);
-    }, 'O nome do projeto é usado nos arquivos C gerados e aparece em maiúsculas no campo "Tree:" do log.').then(function (name) {
+    return UI.prompt('New project', 'Project name', M.uniqueName('project', Store.projectNames()), function (v) {
+      return identError(v) || (Store.projectNames().indexOf(v) >= 0 ? 'A project with this name already exists.' : null);
+    }, 'The project name is used in the generated C files and appears in upper case in the "Tree:" field of the log.').then(function (name) {
       if (!name) return null;
       var p = M.makeProject(name);
       Store.addProject(p);
-      UI.toast('Projeto "' + name + '" criado com a árvore principal "main".', 'success');
+      UI.toast('Project "' + name + '" created with the main tree "main".', 'success');
       return p;
     });
   }
 
   function newTree(projectId, open) {
     var p = Store.project(projectId || S.activeProjectId);
-    if (!p) { UI.toast('Crie ou abra um projeto primeiro.', 'warning'); return Promise.resolve(null); }
-    return UI.prompt('Nova subárvore em ' + p.name, 'Nome da árvore', M.uniqueName('subtree', M.treeNames(p)), function (v) {
-      return identError(v) || (M.findTreeByName(p, v) ? 'Já existe uma árvore com esse nome neste projeto.' : null);
+    if (!p) { UI.toast('Create or open a project first.', 'warning'); return Promise.resolve(null); }
+    return UI.prompt('New subtree in ' + p.name, 'Tree name', M.uniqueName('subtree', M.treeNames(p)), function (v) {
+      return identError(v) || (M.findTreeByName(p, v) ? 'A tree with this name already exists in this project.' : null);
     }).then(function (name) {
       if (!name) return null;
       var tree = M.makeTree(name, true);
@@ -88,9 +88,9 @@
   function renameTree(projectId, treeId) {
     var p = Store.project(projectId), tree = p && p.trees[treeId];
     if (!tree) return;
-    UI.prompt('Renomear árvore', 'Novo nome', tree.name, function (v) {
-      return identError(v) || (v !== tree.name && M.findTreeByName(p, v) ? 'Já existe uma árvore com esse nome.' : null);
-    }, 'As SubTrees que chamam esta árvore são atualizadas automaticamente.').then(function (name) {
+    UI.prompt('Rename tree', 'New name', tree.name, function (v) {
+      return identError(v) || (v !== tree.name && M.findTreeByName(p, v) ? 'A tree with this name already exists.' : null);
+    }, 'SubTrees that call this tree are updated automatically.').then(function (name) {
       if (!name || name === tree.name) return;
       Store.mutate(p.id, function () { tree.name = name; M.resolveRefsByName(p); });
     });
@@ -107,7 +107,7 @@
       else if (t.ctx !== null) t.ctx = null;
     });
     Store.emit('tabs'); Store.emit('structure');
-    UI.toast('"' + p.trees[treeId].name + '" agora é a árvore principal' + (old ? '. "' + old.name + '" pode ser excluída.' : '.'), 'success');
+    UI.toast('"' + p.trees[treeId].name + '" is now the main tree' + (old ? '. "' + old.name + '" can be deleted.' : '.'), 'success');
   }
 
   function treeRefCount(p, treeId) {
@@ -123,13 +123,13 @@
     var p = Store.project(projectId), tree = p && p.trees[treeId];
     if (!tree) return;
     if (treeId === p.mainTreeId) {
-      UI.toast('"' + tree.name + '" é a árvore principal. Defina outra árvore como principal antes de excluí-la.', 'warning', 5000);
+      UI.toast('"' + tree.name + '" is the main tree. Set another tree as main before deleting it.', 'warning', 5000);
       return;
     }
     var refs = treeRefCount(p, treeId);
-    UI.confirm('Excluir árvore', 'Excluir a árvore <b>' + UI.esc(tree.name) + '</b>?' +
-      (refs ? '<br><br>' + I.icon('alert', 14) + ' Ela é chamada por <b>' + refs + '</b> nó(s) SubTree, que ficarão sem destino.' : '') +
-      '<br><br>Você pode desfazer com ' + UI.kbd('Ctrl+Z') + '.', 'Excluir', true).then(function (ok) {
+    UI.confirm('Delete tree', 'Delete the tree <b>' + UI.esc(tree.name) + '</b>?' +
+      (refs ? '<br><br>' + I.icon('alert', 14) + ' It is called by <b>' + refs + '</b> SubTree node(s), which will be left without a target.' : '') +
+      '<br><br>You can undo with ' + UI.kbd('Ctrl+Z') + '.', 'Delete', true).then(function (ok) {
       if (!ok) return;
       Store.mutate(p.id, function () {
         p.treeOrder.forEach(function (tid) {
@@ -161,9 +161,9 @@
   function renameProject(projectId) {
     var p = Store.project(projectId);
     if (!p) return;
-    UI.prompt('Renomear projeto', 'Novo nome', p.name, function (v) {
-      return identError(v) || (v !== p.name && Store.projectNames().indexOf(v) >= 0 ? 'Já existe um projeto com esse nome.' : null);
-    }, 'Lembre-se: o nome aparece em maiúsculas no campo "Tree:" do log do firmware.').then(function (name) {
+    UI.prompt('Rename project', 'New name', p.name, function (v) {
+      return identError(v) || (v !== p.name && Store.projectNames().indexOf(v) >= 0 ? 'A project with this name already exists.' : null);
+    }, 'Remember: the name appears in upper case in the "Tree:" field of the firmware log.').then(function (name) {
       if (!name || name === p.name) return;
       Store.mutate(p.id, function () { p.name = name; });
     });
@@ -173,11 +173,11 @@
     var p = Store.project(projectId);
     if (!p) return;
     var onDisk = p.meta && p.meta.onDisk && S.backend;
-    UI.confirm('Excluir projeto', 'Excluir o projeto <b>' + UI.esc(p.name) + '</b> e todas as suas árvores?' +
-      (onDisk ? '<br><br>' + I.icon('alert', 14) + ' A pasta do projeto no workspace também será apagada do disco.' : '') +
-      '<br><br>Esta ação não pode ser desfeita.', 'Excluir projeto', true).then(function (ok) {
+    UI.confirm('Delete project', 'Delete the project <b>' + UI.esc(p.name) + '</b> and all its trees?' +
+      (onDisk ? '<br><br>' + I.icon('alert', 14) + ' The project folder in the workspace will also be deleted from disk.' : '') +
+      '<br><br>This cannot be undone.', 'Delete project', true).then(function (ok) {
       if (!ok) return;
-      Store.removeProject(p.id).then(function () { UI.toast('Projeto excluído.', 'success'); }).catch(function (e) { UI.toast(e.message, 'error'); });
+      Store.removeProject(p.id).then(function () { UI.toast('Project deleted.', 'success'); }).catch(function (e) { UI.toast(e.message, 'error'); });
     });
   }
 
@@ -185,7 +185,7 @@
     // only for projects that are not on a server workspace
     var p = Store.project(projectId);
     if (!p) return;
-    var go = S.dirty[p.id] ? UI.confirm('Fechar projeto', 'O projeto <b>' + UI.esc(p.name) + '</b> tem alterações não exportadas. Fechar mesmo assim?', 'Fechar', true) : Promise.resolve(true);
+    var go = S.dirty[p.id] ? UI.confirm('Close project', 'The project <b>' + UI.esc(p.name) + '</b> has unexported changes. Close anyway?', 'Close', true) : Promise.resolve(true);
     go.then(function (ok) { if (ok) Store.removeProject(p.id); });
   }
 
@@ -214,14 +214,14 @@
             imp.trees = imp.trees.concat(sub.trees);
             if (!imp.mainTreeName || !imp.trees.some(function (t) { return t.name === imp.mainTreeName; })) imp.mainTreeName = sub.mainTreeName;
           });
-          if (missing.length) UI.toast('Selecione também: ' + missing.join(', ') + ' (incluídos por ' + f.name + ').', 'warning', 7000);
+          if (missing.length) UI.toast('Also select: ' + missing.join(', ') + ' (included by ' + f.name + ').', 'warning', 7000);
           if (imp.trees.length) projects.push(imp);
         } catch (e) { UI.toast(f.name + ': ' + e.message, 'error', 8000); }
       });
       list.filter(function (f) { return !/\.btproj$/i.test(f.name) && !used[f.name]; }).forEach(function (f) {
         try {
           var imp = M.importXml(f.text, f.name.replace(/\.xml$/i, '').replace(/[^A-Za-z0-9_]/g, '_'));
-          if (!imp.trees.length) { UI.toast(f.name + ': nenhum <BehaviorTree> encontrado.', 'warning'); return; }
+          if (!imp.trees.length) { UI.toast(f.name + ': no <BehaviorTree> found.', 'warning'); return; }
           projects.push(imp);
         } catch (e) { UI.toast(f.name + ': ' + e.message, 'error', 8000); }
       });
@@ -235,9 +235,9 @@
     if (!/^[A-Za-z_]/.test(name)) name = 'p_' + name;
     var existing = S.projects.find(function (p) { return p.name === name; });
     var decide = existing ? UI.modal({
-      title: 'Projeto já existe',
-      body: '<p>Já existe um projeto chamado <b>' + UI.esc(name) + '</b> no workspace.</p>',
-      buttons: [{ label: 'Cancelar', value: null }, { label: 'Importar como cópia', value: 'copy' }, { label: 'Substituir', kind: 'danger', value: 'replace' }]
+      title: 'Project already exists',
+      body: '<p>A project named <b>' + UI.esc(name) + '</b> already exists in the workspace.</p>',
+      buttons: [{ label: 'Cancel', value: null }, { label: 'Import as copy', value: 'copy' }, { label: 'Replace', kind: 'danger', value: 'replace' }]
     }) : Promise.resolve('new');
     return decide.then(function (choice) {
       if (!choice) return;
@@ -251,7 +251,7 @@
       }
       Store.addProject(p);
       var issues = M.validateProject(p).filter(function (i) { return i.level === 'error'; });
-      UI.toast('Importado "' + p.name + '": ' + p.treeOrder.length + ' árvore(s)' + (issues.length ? ', ' + issues.length + ' problema(s) — veja a aba Problemas.' : '.'), issues.length ? 'warning' : 'success', 5000);
+      UI.toast('Imported "' + p.name + '": ' + p.treeOrder.length + ' tree(s)' + (issues.length ? ', ' + issues.length + ' problem(s), see the Problems tab.' : '.'), issues.length ? 'warning' : 'success', 5000);
     });
   }
 
@@ -259,19 +259,19 @@
   function blockedByLoose(p) {
     var loose = M.looseNodes(p);
     if (!loose.length) return false;
-    UI.modal({ title: 'Há nós soltos em ' + p.name,
-      body: '<p>Ligue estes nós a um pai (arraste a bolinha de cima até o pai) ou exclua-os antes de salvar/exportar:</p><ul class="issues">' +
+    UI.modal({ title: 'There are loose nodes in ' + p.name,
+      body: '<p>Link these nodes to a parent (drag the top dot to the parent) or delete them before saving/exporting:</p><ul class="issues">' +
         loose.slice(0, 12).map(function (l) {
           var t = M.TYPES[l.node.type], f = t.field ? l.node.props[t.field.key] : l.node.props.label;
           return '<li>' + UI.esc(l.tree.name + ': ' + t.label + (f ? ' "' + f + '"' : '')) + '</li>';
         }).join('') + '</ul>',
-      buttons: [{ label: 'Fechar', value: null }, { label: 'Ver problemas', kind: 'primary', value: true }] }).then(function (v) { if (v) showBottom('problems'); });
+      buttons: [{ label: 'Close', value: null }, { label: 'Show problems', kind: 'primary', value: true }] }).then(function (v) { if (v) showBottom('problems'); });
     return true;
   }
 
   function exportXml(projectId) {
     var p = Store.project(projectId || S.activeProjectId);
-    if (!p) { UI.toast('Nenhum projeto ativo.', 'warning'); return; }
+    if (!p) { UI.toast('No active project.', 'warning'); return; }
     if (blockedByLoose(p)) return;
     UI.download(p.name + '.xml', M.exportXml(p), 'application/xml');
   }
@@ -286,32 +286,32 @@
 
   function save() {
     var ids = Object.keys(S.dirty).filter(function (id) { return Store.project(id); });
-    if (!ids.length) { UI.toast('Nada para salvar.', 'info', 1400); return; }
+    if (!ids.length) { UI.toast('Nothing to save.', 'info', 1400); return; }
     if (ids.some(function (id) { return blockedByLoose(Store.project(id)); })) return;
     Store.saveAll().then(function (res) {
       var disk = res.filter(function (r) { return r.where === 'disk'; });
-      if (disk.length) UI.toast('Salvo em disco: ' + disk.map(function (r) { return r.path; }).join(', '), 'success');
-      else UI.toast('Salvo no navegador. Para ter o arquivo, use Exportar › XML (ou rode o servidor para salvar em disco).', 'success', 5000);
-    }).catch(function (e) { UI.toast('Erro ao salvar: ' + e.message, 'error'); });
+      if (disk.length) UI.toast('Saved to disk: ' + disk.map(function (r) { return r.path; }).join(', '), 'success');
+      else UI.toast('Saved in the browser. To get the file, use Export › XML (or run the server to save to disk).', 'success', 5000);
+    }).catch(function (e) { UI.toast('Error saving: ' + e.message, 'error'); });
   }
 
   function generateCode(projectId) {
     var p = Store.project(projectId || S.activeProjectId);
     if (!p) return;
-    if (!S.backend) { UI.toast('A geração de código C precisa do servidor (python3 studio.py).', 'warning'); return; }
+    if (!S.backend) { UI.toast('C code generation needs the server (python3 studio.py).', 'warning'); return; }
     var errors = M.validateProject(p).filter(function (i) { return i.level === 'error'; });
     if (errors.length) {
-      UI.modal({ title: 'Corrija os problemas antes de gerar', body: '<p>O projeto tem ' + errors.length + ' erro(s):</p><ul class="issues">' +
+      UI.modal({ title: 'Fix the problems before generating', body: '<p>The project has ' + errors.length + ' error(s):</p><ul class="issues">' +
         errors.slice(0, 12).map(function (e) { return '<li>' + UI.esc(e.message) + '</li>'; }).join('') + '</ul>',
-        buttons: [{ label: 'Ver problemas', kind: 'primary', value: true }] }).then(function (v) { if (v) showBottom('problems'); });
+        buttons: [{ label: 'Show problems', kind: 'primary', value: true }] }).then(function (v) { if (v) showBottom('problems'); });
       return;
     }
     var IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
     var input = function (id, value, cls, ph) { return el('input', { class: 'input ' + (cls || ''), id: id, value: value || '', placeholder: ph || '' }); };
     var f = {
       author: input('genAuthor', p.meta.author), email: input('genEmail', p.meta.email),
-      version: input('genVersion', p.meta.version || '1.0'), copyright: input('genCopyright', p.meta.copyright, '', 'ex.: Minha Empresa Ltda.'),
-      cproject: input('genProject', p.meta.cproject || p.name, 'mono'), prefix: input('genPrefix', p.meta.prefix, 'mono', 'opcional'),
+      version: input('genVersion', p.meta.version || '1.0'), copyright: input('genCopyright', p.meta.copyright, '', 'e.g. My Company Ltd.'),
+      cproject: input('genProject', p.meta.cproject || p.name, 'mono'), prefix: input('genPrefix', p.meta.prefix, 'mono', 'optional'),
       output: input('genOutput', p.meta.output || (S.backend.workspace + '/' + p.name + '/generated'), 'mono')
     };
     var err = el('div', { class: 'field-error', id: 'genError' });
@@ -324,9 +324,9 @@
         cproject: f.cproject.value.trim(), prefix: f.prefix.value.trim(), output: f.output.value.trim() };
     }
     function check(v) {
-      if (!IDENT.test(v.cproject)) return 'Projeto: use letras, números e _ (sem começar com número).';
-      if (v.prefix && !IDENT.test(v.prefix)) return 'Prefixo: use letras, números e _ (sem começar com número).';
-      if (!v.output) return 'Escolha a pasta de saída.';
+      if (!IDENT.test(v.cproject)) return 'Project: use letters, digits and _ (not starting with a digit).';
+      if (v.prefix && !IDENT.test(v.prefix)) return 'Prefix: use letters, digits and _ (not starting with a digit).';
+      if (!v.output) return 'Choose the output folder.';
       return '';
     }
     function request(v, dry) {
@@ -342,14 +342,14 @@
         parts.forEach(function (part, i) { if (i === parts.length - 1) node[part] = fl; else node = node[part] = node[part] || {}; });
       });
       var order = { tools: 0, include: 1, src: 2 };
-      var note = { tools: 'gerado: array, common e o XML (sempre substituído)', include: 'seu código: declarações', src: 'seu código: implemente as funções aqui' };
+      var note = { tools: 'generated: array, common and the XML (always replaced)', include: 'your code: declarations', src: 'your code: implement the functions here' };
       function walk(node, depth, top) {
         return Object.keys(node).sort(function (a, b) { return (order[a] === undefined ? 9 : order[a]) - (order[b] === undefined ? 9 : order[b]) || a.localeCompare(b); }).map(function (k) {
           var v = node[k];
           var pad = { style: 'padding-left:' + (depth * 16) + 'px' };
           if (v && v.path) {
             var editable = !/^tools\//.test(v.path);
-            var tag = !v.exists ? '<span class="gen-tag new">novo</span>' : editable ? '<span class="gen-tag keep">existe: mesclado, seu código é mantido</span>' : '<span class="gen-tag over">existe: substituído</span>';
+            var tag = !v.exists ? '<span class="gen-tag new">new</span>' : editable ? '<span class="gen-tag keep">exists: merged, your code is kept</span>' : '<span class="gen-tag over">exists: replaced</span>';
             return el('div', Object.assign({ class: 'gen-file', html: I.icon('code', 13) + UI.esc(k) + tag }, pad));
           }
           return el('div', { class: 'gen-dir' }, [el('div', Object.assign({ class: 'gen-dname', html: I.icon('folder-open', 13) + UI.esc(k) + '/' + (depth === 1 && note[k] ? '<span class="hint">' + note[k] + '</span>' : '') }, pad))]
@@ -381,23 +381,23 @@
       Store.api('/api/fs/dirs?path=' + encodeURIComponent(path || '')).then(function (res) {
         browser.innerHTML = '';
         var bar = el('div', { class: 'gen-bbar' }, [
-          el('button', { class: 'btn small', type: 'button', html: I.icon('arrow-left', 14) + 'Acima', disabled: !res.parent, onclick: function () { browse(res.parent); } }),
+          el('button', { class: 'btn small', type: 'button', html: I.icon('arrow-left', 14) + 'Up', disabled: !res.parent, onclick: function () { browse(res.parent); } }),
           el('button', { class: 'btn small', type: 'button', text: 'Workspace', onclick: function () { browse(res.workspace); } }),
           el('button', { class: 'btn small', type: 'button', text: 'Home', onclick: function () { browse(res.home); } }),
-          el('button', { class: 'btn small', type: 'button', html: I.icon('plus', 14) + 'Nova pasta', onclick: function () {
-            UI.prompt('Nova pasta', 'Nome da pasta dentro de ' + res.path, '').then(function (name) {
+          el('button', { class: 'btn small', type: 'button', html: I.icon('plus', 14) + 'New folder', onclick: function () {
+            UI.prompt('New folder', 'Folder name inside ' + res.path, '').then(function (name) {
               if (!name) return;
               Store.api('/api/fs/mkdir', { path: res.path + '/' + name }).then(function (r) { browse(r.path); }).catch(function (e) { UI.toast(e.message, 'error'); });
             });
           } }),
-          el('button', { class: 'btn small primary', type: 'button', html: I.icon('check', 14) + 'Usar esta pasta', onclick: function () {
+          el('button', { class: 'btn small primary', type: 'button', html: I.icon('check', 14) + 'Use this folder', onclick: function () {
             f.output.value = res.path; browser.hidden = true; refresh();
           } })
         ]);
         browser.appendChild(bar);
         browser.appendChild(el('div', { class: 'gen-bpath mono', text: res.path }));
         var list = el('div', { class: 'gen-blist' });
-        if (!res.dirs.length) list.appendChild(el('div', { class: 'hint', text: '(sem subpastas)' }));
+        if (!res.dirs.length) list.appendChild(el('div', { class: 'hint', text: '(no subfolders)' }));
         res.dirs.forEach(function (d) {
           list.appendChild(el('button', { class: 'gen-bitem', type: 'button', html: I.icon('folder', 14) + UI.esc(d), onclick: function () { browse(res.path + '/' + d); } }));
         });
@@ -405,44 +405,44 @@
         browser.hidden = false;
       }).catch(function (e) { UI.toast(e.message, 'error'); });
     }
-    var pick = el('button', { class: 'btn', type: 'button', id: 'genBrowse', html: I.icon('folder-open', 16) + 'Escolher…', onclick: function () { browser.hidden ? browse(f.output.value) : (browser.hidden = true); } });
+    var pick = el('button', { class: 'btn', type: 'button', id: 'genBrowse', html: I.icon('folder-open', 16) + 'Browse…', onclick: function () { browser.hidden ? browse(f.output.value) : (browser.hidden = true); } });
 
     var body = el('div', { class: 'form gen-form' }, [
-      el('p', { class: 'hint', html: 'Gera o C com <code>Scripts/</code> a partir da árvore principal <b>' + UI.esc(p.trees[p.mainTreeId].name) + '</b> (★).' }),
-      el('div', { class: 'gen-section', text: 'Cabeçalho dos arquivos' }),
-      el('div', { class: 'grid2' }, [field('Autor', f.author), field('E-mail', f.email)]),
-      el('div', { class: 'grid2' }, [field('Versão', f.version), field('Copyright', f.copyright)]),
-      el('div', { class: 'gen-section', text: 'Código' }),
+      el('p', { class: 'hint', html: 'Generates the C code with <code>Scripts/</code> from the main tree <b>' + UI.esc(p.trees[p.mainTreeId].name) + '</b> (★).' }),
+      el('div', { class: 'gen-section', text: 'File header' }),
+      el('div', { class: 'grid2' }, [field('Author', f.author), field('E-mail', f.email)]),
+      el('div', { class: 'grid2' }, [field('Version', f.version), field('Copyright', f.copyright)]),
+      el('div', { class: 'gen-section', text: 'Code' }),
       el('div', { class: 'grid2' }, [
-        field('Projeto', f.cproject, 'Nome em <code>btree_&lt;projeto&gt;_…</code>'),
-        field('Prefixo', f.prefix, 'Fica <code>&lt;prefixo&gt;_btree_…</code>')
+        field('Project', f.cproject, 'Name in <code>btree_&lt;project&gt;_…</code>'),
+        field('Prefix', f.prefix, 'Becomes <code>&lt;prefix&gt;_btree_…</code>')
       ]),
-      el('div', { class: 'gen-section', text: 'Destino' }),
-      el('div', { class: 'field' }, [el('span', { text: 'Pasta de saída' }), el('div', { class: 'gen-out' }, [f.output, pick])]),
+      el('div', { class: 'gen-section', text: 'Destination' }),
+      el('div', { class: 'field' }, [el('span', { text: 'Output folder' }), el('div', { class: 'gen-out' }, [f.output, pick])]),
       browser,
       err,
       preview
     ]);
-    UI.modal({ title: 'Gerar código C — ' + p.name, body: body, width: '720px',
-      buttons: [{ label: 'Cancelar', value: null }, { label: 'Gerar', kind: 'primary', icon: 'code', value: true, action: function () {
+    UI.modal({ title: 'Generate C code: ' + p.name, body: body, width: '720px',
+      buttons: [{ label: 'Cancel', value: null }, { label: 'Generate', kind: 'primary', icon: 'code', value: true, action: function () {
         var msg = check(values()); err.textContent = msg; return msg ? false : true;
       } }] }).then(function (go) {
       if (!go) return;
       var v = values();
       p.meta.output = v.output; p.meta.author = v.author; p.meta.email = v.email; p.meta.version = v.version;
       p.meta.copyright = v.copyright; p.meta.prefix = v.prefix; p.meta.cproject = v.cproject;
-      // The firmware logs "Tree: <PROJETO>": keep the Monitor matching it.
+      // The firmware logs "Tree: <PROJECT>": keep the Monitor matching it.
       if (v.cproject.toUpperCase() !== M.logNameOf(p)) p.logName = v.cproject.toUpperCase();
       Store.persistNow();
-      UI.toast('Gerando código…', 'info', 1500);
+      UI.toast('Generating code…', 'info', 1500);
       Store.api('/api/generate', request(v, false)).then(function (res) {
-        UI.modal({ title: 'Código gerado', width: '640px',
-          body: '<p>' + res.files.length + ' arquivos em <code>' + UI.esc(res.output) + '</code>:</p><ul class="files mono">' +
+        UI.modal({ title: 'Code generated', width: '640px',
+          body: '<p>' + res.files.length + ' files in <code>' + UI.esc(res.output) + '</code>:</p><ul class="files mono">' +
             res.files.map(function (x) { return '<li>' + UI.esc(x) + '</li>'; }).join('') + '</ul>' +
-            '<p class="hint">Inclua <code>btree-lib</code>, <code>tools/</code>, <code>include/</code> e <code>src/</code> no build e implemente ' +
-            '<code>btree_common_delay_ms()</code>. Com <code>BTREE_COMMON_DEBUG == 1</code>, o firmware imprime <code>Tree: ' + UI.esc(M.logNameOf(p)) + '</code>, que o Monitor reconhece.</p>',
+            '<p class="hint">Add <code>btree-lib</code>, <code>tools/</code>, <code>include/</code> and <code>src/</code> to the build and implement ' +
+            '<code>btree_common_delay_ms()</code>. With <code>BTREE_COMMON_DEBUG</code> non-zero, the firmware prints <code>Tree: ' + UI.esc(M.logNameOf(p)) + '</code>, which the Monitor recognizes.</p>',
           buttons: [{ label: 'OK', kind: 'primary', value: true }] });
-      }).catch(function (e) { UI.toast('Falha ao gerar: ' + e.message, 'error', 10000); });
+      }).catch(function (e) { UI.toast('Generation failed: ' + e.message, 'error', 10000); });
     });
     refresh();
   }
@@ -450,18 +450,18 @@
   function fileMenu(x, y) {
     var p = Store.activeProject();
     UI.contextMenu(x, y, [
-      { label: 'Novo projeto…', icon: 'plus', action: newProject },
-      { label: 'Nova subárvore…', icon: 'subtree', disabled: !p, action: function () { newTree(); } },
-      { label: 'Abrir XML / .btproj…', icon: 'folder', shortcut: UI.kbd('Ctrl+O'), action: function () { document.getElementById('fileOpen').click(); } },
-      { label: 'Exemplo', icon: 'sparkles', action: loadExample },
+      { label: 'New project…', icon: 'plus', action: newProject },
+      { label: 'New subtree…', icon: 'subtree', disabled: !p, action: function () { newTree(); } },
+      { label: 'Open XML / .btproj…', icon: 'folder', shortcut: UI.kbd('Ctrl+O'), action: function () { document.getElementById('fileOpen').click(); } },
+      { label: 'Example', icon: 'sparkles', action: loadExample },
       '-',
-      { label: 'Exportar', icon: 'download', disabled: !p, submenu: p ? [
-        { label: 'XML do projeto (.xml)', icon: 'download', action: function () { exportXml(); } },
-        { label: 'Projeto Groot2 (.btproj + .xml)', icon: 'project', action: function () { exportBtproj(); } },
-        { label: 'Copiar XML', icon: 'copy', action: function () { if (!blockedByLoose(p)) UI.copyText(M.exportXml(p), 'XML copiado.'); } }
+      { label: 'Export', icon: 'download', disabled: !p, submenu: p ? [
+        { label: 'Project XML (.xml)', icon: 'download', action: function () { exportXml(); } },
+        { label: 'Groot2 project (.btproj + .xml)', icon: 'project', action: function () { exportBtproj(); } },
+        { label: 'Copy XML', icon: 'copy', action: function () { if (!blockedByLoose(p)) UI.copyText(M.exportXml(p), 'XML copied.'); } }
       ] : null },
-      { label: 'Gerar código C…', icon: 'code', disabled: !p || !S.backend || !S.backend.generatorAvailable,
-        title: S.backend ? '' : 'Requer o servidor (python3 studio.py)', action: function () { generateCode(); } }
+      { label: 'Generate C code…', icon: 'code', disabled: !p || !S.backend || !S.backend.generatorAvailable,
+        title: S.backend ? '' : 'Requires the server (python3 studio.py)', action: function () { generateCode(); } }
     ]);
   }
 
@@ -474,9 +474,9 @@
     box.innerHTML = '';
     if (!S.projects.length) {
       box.appendChild(el('div', { class: 'ws-empty' }, [
-        el('p', { text: 'Nenhum projeto ainda.' }),
-        el('button', { class: 'btn sm primary', html: I.icon('plus', 14) + 'Novo projeto', onclick: newProject }),
-        el('button', { class: 'btn sm', html: I.icon('folder', 14) + 'Abrir XML', onclick: function () { document.getElementById('fileOpen').click(); } })
+        el('p', { text: 'No projects yet.' }),
+        el('button', { class: 'btn sm primary', html: I.icon('plus', 14) + 'New project', onclick: newProject }),
+        el('button', { class: 'btn sm', html: I.icon('folder', 14) + 'Open XML', onclick: function () { document.getElementById('fileOpen').click(); } })
       ]));
       return;
     }
@@ -484,14 +484,14 @@
     S.projects.forEach(function (p) {
       var collapsed = !!collapsedProjects[p.id];
       var issues = M.validateProject(p).filter(function (i) { return i.level === 'error'; }).length;
-      var row = el('div', { class: 'ws-row ws-project' + (p.id === S.activeProjectId ? ' active' : ''), title: p.name + (S.dirty[p.id] ? ' (alterações não salvas)' : '') }, [
+      var row = el('div', { class: 'ws-row ws-project' + (p.id === S.activeProjectId ? ' active' : ''), title: p.name + (S.dirty[p.id] ? ' (unsaved changes)' : '') }, [
         el('span', { class: 'twisty' + (collapsed ? ' closed' : ''), html: I.icon('chevron', 14) }),
         el('span', { class: 'ws-icon', html: I.icon('project', 15) }),
         el('span', { class: 'ws-name', text: p.name }),
-        S.dirty[p.id] ? el('span', { class: 'dirty-dot', title: 'Alterações não salvas' }) : null,
-        issues ? el('span', { class: 'ws-badge bad', title: issues + ' erro(s)', text: String(issues) }) : null,
-        el('button', { class: 'mini ws-act', title: 'Nova subárvore', html: I.icon('tree-plus', 14), onclick: function (e) { e.stopPropagation(); newTree(p.id); } }),
-        el('button', { class: 'mini ws-act', title: 'Mais opções', html: I.icon('more', 14), onclick: function (e) { e.stopPropagation(); var r = e.currentTarget.getBoundingClientRect(); projectMenu(p, r.left, r.bottom + 2); } })
+        S.dirty[p.id] ? el('span', { class: 'dirty-dot', title: 'Unsaved changes' }) : null,
+        issues ? el('span', { class: 'ws-badge bad', title: issues + ' error(s)', text: String(issues) }) : null,
+        el('button', { class: 'mini ws-act', title: 'New subtree', html: I.icon('tree-plus', 14), onclick: function (e) { e.stopPropagation(); newTree(p.id); } }),
+        el('button', { class: 'mini ws-act', title: 'More options', html: I.icon('more', 14), onclick: function (e) { e.stopPropagation(); var r = e.currentTarget.getBoundingClientRect(); projectMenu(p, r.left, r.bottom + 2); } })
       ]);
       row.addEventListener('click', function (e) {
         if (e.target.closest('.twisty')) { collapsedProjects[p.id] = !collapsed; renderWorkspace(); return; }
@@ -506,11 +506,11 @@
         var isMain = tid === p.mainTreeId;
         var isOpen = activeTab && activeTab.projectId === p.id && activeTab.treeId === tid;
         var refs = treeRefCount(p, tid);
-        var trow = el('div', { class: 'ws-row ws-tree' + (isOpen ? ' active' : ''), title: (isMain ? 'Árvore principal' : 'Subárvore') + (refs ? ' — chamada ' + refs + 'x' : '') + '\nDuplo clique para renomear' }, [
+        var trow = el('div', { class: 'ws-row ws-tree' + (isOpen ? ' active' : ''), title: (isMain ? 'Main tree' : 'Subtree') + (refs ? ', called ' + refs + 'x' : '') + '\nDouble-click to rename' }, [
           el('span', { class: 'ws-icon' + (isMain ? ' star' : ''), html: I.icon(isMain ? 'star' : 'subtree', 14) }),
           el('span', { class: 'ws-name', text: tree.name }),
           refs ? el('span', { class: 'ws-badge', text: refs + '×' }) : null,
-          el('button', { class: 'mini ws-act', title: 'Mais opções', html: I.icon('more', 14), onclick: function (e) { e.stopPropagation(); var r = e.currentTarget.getBoundingClientRect(); treeMenu(p, tree, r.left, r.bottom + 2); } })
+          el('button', { class: 'mini ws-act', title: 'More options', html: I.icon('more', 14), onclick: function (e) { e.stopPropagation(); var r = e.currentTarget.getBoundingClientRect(); treeMenu(p, tree, r.left, r.bottom + 2); } })
         ]);
         trow.addEventListener('click', function () { Store.openTab(p.id, tid, isMain ? '' : null); });
         trow.addEventListener('dblclick', function () { renameTree(p.id, tid); });
@@ -522,29 +522,29 @@
 
   function projectMenu(p, x, y) {
     UI.contextMenu(x, y, [
-      { label: 'Abrir árvore principal', icon: 'star', action: function () { Store.openTab(p.id, p.mainTreeId, ''); } },
-      { label: 'Nova subárvore…', icon: 'tree-plus', action: function () { newTree(p.id); } },
+      { label: 'Open main tree', icon: 'star', action: function () { Store.openTab(p.id, p.mainTreeId, ''); } },
+      { label: 'New subtree…', icon: 'tree-plus', action: function () { newTree(p.id); } },
       '-',
-      { label: 'Renomear projeto…', icon: 'rename', action: function () { renameProject(p.id); } },
-      { label: 'Salvar', icon: 'save', shortcut: UI.kbd('Ctrl+S'), disabled: !S.dirty[p.id], action: function () {
-        Store.saveProject(p.id).then(function (r) { UI.toast(r.where === 'disk' ? 'Salvo em ' + r.path : 'Salvo no navegador.', 'success'); }).catch(function (e) { UI.toast(e.message, 'error'); });
+      { label: 'Rename project…', icon: 'rename', action: function () { renameProject(p.id); } },
+      { label: 'Save', icon: 'save', shortcut: UI.kbd('Ctrl+S'), disabled: !S.dirty[p.id], action: function () {
+        Store.saveProject(p.id).then(function (r) { UI.toast(r.where === 'disk' ? 'Saved to ' + r.path : 'Saved in the browser.', 'success'); }).catch(function (e) { UI.toast(e.message, 'error'); });
       } },
-      { label: 'Exportar XML', icon: 'download', action: function () { exportXml(p.id); } },
-      { label: 'Gerar código C…', icon: 'code', disabled: !S.backend || !S.backend.generatorAvailable, action: function () { generateCode(p.id); } },
+      { label: 'Export XML', icon: 'download', action: function () { exportXml(p.id); } },
+      { label: 'Generate C code…', icon: 'code', disabled: !S.backend || !S.backend.generatorAvailable, action: function () { generateCode(p.id); } },
       '-',
-      { label: S.backend && p.meta.onDisk ? 'Excluir projeto (apaga do disco)' : 'Excluir projeto', icon: 'trash', danger: true, action: function () { deleteProject(p.id); } }
+      { label: S.backend && p.meta.onDisk ? 'Delete project (removes from disk)' : 'Delete project', icon: 'trash', danger: true, action: function () { deleteProject(p.id); } }
     ]);
   }
 
   function treeMenu(p, tree, x, y) {
     var isMain = tree.id === p.mainTreeId;
     UI.contextMenu(x, y, [
-      { label: 'Abrir', icon: 'external', action: function () { Store.openTab(p.id, tree.id, isMain ? '' : null); } },
-      { label: 'Renomear…', icon: 'rename', action: function () { renameTree(p.id, tree.id); } },
-      { label: 'Definir como principal', icon: 'star', disabled: isMain, action: function () { setMainTree(p.id, tree.id); } },
-      { label: 'Duplicar', icon: 'duplicate', action: function () { duplicateTree(p.id, tree.id); } },
+      { label: 'Open', icon: 'external', action: function () { Store.openTab(p.id, tree.id, isMain ? '' : null); } },
+      { label: 'Rename…', icon: 'rename', action: function () { renameTree(p.id, tree.id); } },
+      { label: 'Set as main', icon: 'star', disabled: isMain, action: function () { setMainTree(p.id, tree.id); } },
+      { label: 'Duplicate', icon: 'duplicate', action: function () { duplicateTree(p.id, tree.id); } },
       '-',
-      { label: 'Excluir árvore', icon: 'trash', danger: true, disabled: isMain, title: isMain ? 'Defina outra árvore como principal primeiro' : '', action: function () { deleteTree(p.id, tree.id); } }
+      { label: 'Delete tree', icon: 'trash', danger: true, disabled: isMain, title: isMain ? 'Set another tree as main first' : '', action: function () { deleteTree(p.id, tree.id); } }
     ]);
   }
 
@@ -561,7 +561,7 @@
       box.appendChild(el('div', { class: 'pal-group', text: g.title }));
       types.forEach(function (type) {
         var t = T[type];
-        var item = el('div', { class: 'pal-item cat-' + t.cat, title: t.desc + '\n\nArraste para a árvore (ou para o vazio, solto), ou clique para adicionar ao nó selecionado.' }, [
+        var item = el('div', { class: 'pal-item cat-' + t.cat, title: t.desc + '\n\nDrag onto the tree (or onto empty space, loose), or click to add it to the selected node.' }, [
           el('span', { class: 'pal-icon', html: I.icon(t.icon, 15) }),
           el('span', { class: 'pal-label', text: t.label })
         ]);
@@ -582,12 +582,12 @@
       var p = Store.project(tab.projectId), tree = p && p.trees[tab.treeId];
       if (!tree) return;
       var isMain = tree.id === p.mainTreeId;
-      var t = el('div', { class: 'tab' + (tab.id === S.activeTabId ? ' active' : ''), title: p.name + ' › ' + tree.name + (tab.ctx ? ' (instância)' : '') }, [
+      var t = el('div', { class: 'tab' + (tab.id === S.activeTabId ? ' active' : ''), title: p.name + ' › ' + tree.name + (tab.ctx ? ' (instance)' : '') }, [
         el('span', { class: 'tab-icon' + (isMain ? ' star' : ''), html: I.icon(isMain ? 'star' : 'subtree', 13) }),
         multiProject ? el('span', { class: 'tab-proj', text: p.name + ' ›' }) : null,
         el('span', { class: 'tab-name', text: tree.name }),
-        tab.ctx && tab.ctx.length ? el('span', { class: 'tab-inst', title: 'Instância chamada a partir da árvore principal', html: I.icon('target', 11) }) : null,
-        el('button', { class: 'tab-close', title: 'Fechar', html: I.icon('x', 12), onclick: function (e) { e.stopPropagation(); Store.closeTab(tab.id); } })
+        tab.ctx && tab.ctx.length ? el('span', { class: 'tab-inst', title: 'Instance called from the main tree', html: I.icon('target', 11) }) : null,
+        el('button', { class: 'tab-close', title: 'Close', html: I.icon('x', 12), onclick: function (e) { e.stopPropagation(); Store.closeTab(tab.id); } })
       ]);
       t.addEventListener('mousedown', function (e) { if (e.button === 1) { e.preventDefault(); Store.closeTab(tab.id); } });
       t.addEventListener('click', function () { Store.activateTab(tab.id); });
@@ -595,16 +595,16 @@
       t.addEventListener('contextmenu', function (e) {
         e.preventDefault();
         UI.contextMenu(e.clientX, e.clientY, [
-          { label: 'Fechar', icon: 'x', action: function () { Store.closeTab(tab.id); } },
-          { label: 'Fechar outras', icon: 'x', action: function () { S.tabs.filter(function (x) { return x.id !== tab.id; }).forEach(function (x) { Store.closeTab(x.id); }); } },
+          { label: 'Close', icon: 'x', action: function () { Store.closeTab(tab.id); } },
+          { label: 'Close others', icon: 'x', action: function () { S.tabs.filter(function (x) { return x.id !== tab.id; }).forEach(function (x) { Store.closeTab(x.id); }); } },
           '-',
-          { label: 'Renomear árvore…', icon: 'rename', action: function () { renameTree(p.id, tree.id); } },
-          { label: 'Definir como principal', icon: 'star', disabled: isMain, action: function () { setMainTree(p.id, tree.id); } }
+          { label: 'Rename tree…', icon: 'rename', action: function () { renameTree(p.id, tree.id); } },
+          { label: 'Set as main', icon: 'star', disabled: isMain, action: function () { setMainTree(p.id, tree.id); } }
         ]);
       });
       bar.appendChild(t);
     });
-    var add = el('button', { class: 'tab-add', title: 'Nova subárvore', html: I.icon('plus', 14), onclick: function () { newTree(); } });
+    var add = el('button', { class: 'tab-add', title: 'New subtree', html: I.icon('plus', 14), onclick: function () { newTree(); } });
     bar.appendChild(add);
     var at = bar.querySelector('.tab.active');
     if (at && at.scrollIntoView) at.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -642,7 +642,7 @@
         box.appendChild(row);
       });
     });
-    if (!total) box.appendChild(el('div', { class: 'pb-ok', html: I.icon('check', 16) + 'Nenhum problema encontrado.' }));
+    if (!total) box.appendChild(el('div', { class: 'pb-ok', html: I.icon('check', 16) + 'No problems found.' }));
     countEl.textContent = total ? String(total) : '';
     countEl.className = 'count' + (errors ? ' bad' : total ? ' warn' : '');
   }
@@ -729,36 +729,36 @@
   function helpDialog() {
     var k = UI.kbd;
     var rows = [
-      ['Salvar', k('Ctrl+S')], ['Abrir XML', k('Ctrl+O')], ['Desfazer / Refazer', k('Ctrl+Z') + ' / ' + k('Ctrl+Y')],
-      ['Excluir nó(s) ou linha selecionada (os filhos ficam soltos)', 'Del'], ['Copiar / Recortar / Colar (só os nós selecionados)', k('Ctrl+C') + ' / ' + k('Ctrl+X') + ' / ' + k('Ctrl+V')],
-      ['Selecionar vários', k('Ctrl+') + 'clique · Shift+arrastar no vazio · ' + k('Ctrl+A')],
-      ['Comandos / buscar nó, função ou árvore', k('Ctrl+K')], ['Adicionar nó rápido (digite "action nome", "sleep 500"…)', 'Espaço / Tab · duplo clique no vazio'],
-      ['Monitor: pausar/reproduzir histórico · passo a passo · falha anterior/próxima · ao vivo', 'Espaço · , / . · Shift+, / . · End'],
-      ['Monitor: ver a árvore num instante do passado', 'clique na linha do tempo ou numa linha [BTREE] do terminal'],
-      ['Duplicar', k('Ctrl+D')], ['Navegar entre nós', '← ↑ ↓ →'], ['Mover nó entre irmãos', k('Alt+←') + ' / ' + k('Alt+→')],
-      ['Editar campo do nó / abrir SubTree', 'Enter'], ['Expandir/recolher SubTree', 'E'], ['Ajustar à tela', 'F'], ['Zoom', '+ / − / 0'],
-      ['Modo Editor / Monitor', 'F2 / F3'], ['Mostrar/ocultar painel inferior', k('Ctrl+J')],
-      ['Mostrar/ocultar painel esquerdo / direito', k('Ctrl+B') + ' / ' + k('Ctrl+I')], ['Copiar ao arrastar', 'Segure ' + k('Ctrl+') + ' ao soltar']
+      ['Save', k('Ctrl+S')], ['Open XML', k('Ctrl+O')], ['Undo / Redo', k('Ctrl+Z') + ' / ' + k('Ctrl+Y')],
+      ['Delete selected node(s) or edge (children become loose)', 'Del'], ['Copy / Cut / Paste (selected nodes only)', k('Ctrl+C') + ' / ' + k('Ctrl+X') + ' / ' + k('Ctrl+V')],
+      ['Select several', k('Ctrl+') + 'click · Shift+drag on empty space · ' + k('Ctrl+A')],
+      ['Commands / find node, function or tree', k('Ctrl+K')], ['Quick add node (type "action name", "sleep 500"…)', 'Space / Tab · double-click on empty space'],
+      ['Monitor: pause/play history · step · previous/next failure · live', 'Space · , / . · Shift+, / . · End'],
+      ['Monitor: see the tree at a past instant', 'click the timeline or a [BTREE] line in the terminal'],
+      ['Duplicate', k('Ctrl+D')], ['Move between nodes', '← ↑ ↓ →'], ['Move node among siblings', k('Alt+←') + ' / ' + k('Alt+→')],
+      ['Edit node field / open SubTree', 'Enter'], ['Expand/collapse SubTree', 'E'], ['Fit to screen', 'F'], ['Zoom', '+ / − / 0'],
+      ['Editor / Monitor mode', 'F2 / F3'], ['Show/hide bottom panel', k('Ctrl+J')],
+      ['Show/hide left / right panel', k('Ctrl+B') + ' / ' + k('Ctrl+I')], ['Copy while dragging', 'Hold ' + k('Ctrl+') + ' when dropping']
     ];
     UI.modal({
-      title: 'Ajuda e atalhos', width: '640px',
+      title: 'Help and shortcuts', width: '640px',
       body: '<div class="help">' +
-        '<h5>Como começar</h5><ol>' +
-        '<li>Crie um projeto (<b>Arquivo › Novo projeto</b>): ele já vem com a árvore principal <b>main</b> e uma Action.</li>' +
-        '<li>Arraste nós da paleta à esquerda para a árvore. Selecione um nó para editar suas propriedades à direita.</li>' +
-        '<li>Use <b>Salvar</b> (servidor: grava em <code>workspace/</code>) ou <b>Exportar</b> para obter o XML usado pelo <code>btree_array_creator.py</code>.</li>' +
-        '<li>No <b>Monitor</b>, conecte a UART/SWD (ou simule) — os nós ficam <span class="st-txt running">amarelos</span> em execução, <span class="st-txt success">verdes</span> em sucesso, <span class="st-txt fail">vermelhos</span> em falha e <span class="st-txt standby">cinza</span> em standby.</li></ol>' +
-        '<h5>Editando a árvore</h5><ul>' +
-        '<li>Solte um nó da paleta <b>sobre outro</b>: centro = filho, bordas = antes/depois. Um decorador sobre uma folha a <b>envolve</b>.</li>' +
-        '<li>Solte no <b>vazio</b> e o nó fica <b>solto</b> (tracejado). Ligue arrastando a <b>bolinha de cima</b> até o pai, ou o <b>+</b> do pai até ele. Com nós soltos não dá para salvar.</li>' +
-        '<li>Arrastar um nó ligado para os lados <b>muda a ordem</b> entre os irmãos — a ordem é o comportamento da árvore.</li>' +
-        '<li>Para <b>desconectar</b>: arraste a bolinha de cima para o vazio, ou clique direito na <b>linha</b>.</li>' +
-        '<li><b>Clique direito</b> em qualquer lugar mostra o que dá para fazer ali. Duplo clique numa SubTree a abre.</li></ul>' +
-        '<h5>Formato do log</h5><pre class="mono">[BTREE] | Tree: %s | Node: %d | Status: %s | Type: %s | Function: %s</pre>' +
-        '<p class="hint"><b>Tree</b> é o nome do projeto em maiúsculas; <b>Node</b> é o índice do nó no array gerado (ative <b>#</b> no canto inferior para ver os índices).</p>' +
-        '<h5>Atalhos</h5><table class="keys">' + rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td><kbd>' + r[1] + '</kbd></td></tr>'; }).join('') + '</table>' +
-        '<p class="hint">Servidor: ' + (S.backend ? 'conectado (workspace em <code>' + UI.esc(S.backend.workspace) + '</code>)' : 'não detectado — os projetos ficam salvos no navegador.') + '</p></div>',
-      buttons: [{ label: 'Fechar', kind: 'primary', value: true }]
+        '<h5>Getting started</h5><ol>' +
+        '<li>Create a project (<b>File › New project</b>): it comes with the main tree <b>main</b> and one Action.</li>' +
+        '<li>Drag nodes from the palette on the left onto the tree. Select a node to edit its properties on the right.</li>' +
+        '<li>Use <b>Save</b> (server: writes to <code>workspace/</code>) or <b>Export</b> to get the XML used by <code>btree_array_creator.py</code>.</li>' +
+        '<li>In the <b>Monitor</b>, connect the UART/SWD (or simulate): nodes turn <span class="st-txt running">yellow</span> while running, <span class="st-txt success">green</span> on success, <span class="st-txt fail">red</span> on fail and <span class="st-txt standby">gray</span> on standby.</li></ol>' +
+        '<h5>Editing the tree</h5><ul>' +
+        '<li>Drop a palette node <b>onto another</b>: center = child, edges = before/after. A decorator dropped on a leaf <b>wraps</b> it.</li>' +
+        '<li>Drop on <b>empty space</b> and the node is <b>loose</b> (dashed). Link it by dragging its <b>top dot</b> to the parent, or the parent’s <b>+</b> to it. Projects with loose nodes cannot be saved.</li>' +
+        '<li>Dragging a linked node sideways <b>changes its order</b> among siblings: the order is the tree’s behavior.</li>' +
+        '<li>To <b>disconnect</b>: drag the top dot to empty space, or right-click the <b>edge</b>.</li>' +
+        '<li><b>Right-click</b> anywhere shows what can be done there. Double-click a SubTree to open it.</li></ul>' +
+        '<h5>Log format</h5><pre class="mono">[BTREE] | Tree: %s | Node: %d | Status: %s | Type: %s | Function: %s</pre>' +
+        '<p class="hint"><b>Tree</b> is the project name in upper case; <b>Node</b> is the node index in the generated array (turn on <b>#</b> in the bottom corner to see the indices).</p>' +
+        '<h5>Shortcuts</h5><table class="keys">' + rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td><kbd>' + r[1] + '</kbd></td></tr>'; }).join('') + '</table>' +
+        '<p class="hint">Server: ' + (S.backend ? 'connected (workspace at <code>' + UI.esc(S.backend.workspace) + '</code>)' : 'not detected, projects are stored in the browser.') + '</p></div>',
+      buttons: [{ label: 'Close', kind: 'primary', value: true }]
     });
   }
 
@@ -831,7 +831,7 @@
     var name = M.uniqueName('robot', Store.projectNames());
     var p = M.projectFromImport(imp, name);
     Store.addProject(p);
-    UI.toast('Projeto de exemplo criado. Experimente o Monitor › Simulação!', 'success', 4500);
+    UI.toast('Example project created. Try Monitor › Simulation!', 'success', 4500);
   }
 
   function boot() {
@@ -902,8 +902,8 @@
         if (p) Store.openTab(p.id, p.mainTreeId, '');
       }
       renderProblems();
-      if (summary.recovered.length) UI.toast('Alterações não salvas recuperadas: ' + summary.recovered.join(', '), 'warning', 6000);
-      if (summary.error) UI.toast('Erro ao carregar do workspace: ' + summary.error, 'error', 9000);
+      if (summary.recovered.length) UI.toast('Unsaved changes recovered: ' + summary.recovered.join(', '), 'warning', 6000);
+      if (summary.error) UI.toast('Error loading the workspace: ' + summary.error, 'error', 9000);
       if (!S.backend && location.protocol !== 'file:') {
         // served by something else (e.g. a static server): fine, browser storage is used
       }

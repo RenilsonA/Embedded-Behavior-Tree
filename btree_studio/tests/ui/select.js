@@ -30,7 +30,7 @@ const { chromium } = require('playwright-core');
   await pg.locator('.node.t-action').nth(0).click({ modifiers: ['Control'] });
   await pg.locator('.node.t-action').nth(2).click({ modifiers: ['Control'] });
   const multi = await pg.locator('#inspector .insp-title').innerText();
-  ok('inspector shows multi-selection', /3 nós/.test(multi), multi);
+  ok('inspector shows multi-selection', /3 nodes/.test(multi), multi);
   await pg.keyboard.press('Control+c'); await pg.keyboard.press('Escape');
   await node('.node.t-root').click(); await pg.keyboard.press('Control+v'); await pg.waitForTimeout(200);
   const pasted = await pg.evaluate(() => { const t = BTStore.tabTree(); return BTModel.looseRoots(t).map(id => t.nodes[id].type + '[' + t.nodes[id].children.length + ']').sort().join(','); });
@@ -46,15 +46,15 @@ const { chromium } = require('playwright-core');
   ok('Del on edge disconnects (nothing deleted)', s.n === 5 && s.loose === 'fallback', s);
   await pg.keyboard.press('Control+z'); await pg.waitForTimeout(200);
 
-  // 5. "Copiar ramificação" only for nodes with children
+  // 5. "Copy branch" only for nodes with children
   await node('.node.t-action').click({ button: 'right' }); await pg.waitForTimeout(100);
-  ok('leaf menu has no "Copiar ramificação"', !/Copiar ramificação/.test(await pg.locator('#ctxMenu').innerText()));
+  ok('leaf menu has no "Copy branch"', !/Copy branch/.test(await pg.locator('#ctxMenu').innerText()));
   await pg.keyboard.press('Escape');
   await node('.node.t-sequence').click({ button: 'right' }); await pg.waitForTimeout(100);
-  await pg.locator('#ctxMenu').getByText('Copiar ramificação').click();
+  await pg.locator('#ctxMenu').getByText('Copy branch').click();
   await node('.node.t-root').click({ button: 'right' }); await pg.waitForTimeout(100);
   await pg.mouse.click(300, 600, { button: 'right' }); await pg.waitForTimeout(100);
-  await pg.locator('#ctxMenu').getByText('Colar aqui (solto)').click(); await pg.waitForTimeout(200);
+  await pg.locator('#ctxMenu').getByText('Paste here (loose)').click(); await pg.waitForTimeout(200);
   s = await st();
   ok('branch copy pastes the whole branch', s.n === 10 && s.loose === 'sequence', s);
   await pg.keyboard.press('Control+z'); await pg.waitForTimeout(200);

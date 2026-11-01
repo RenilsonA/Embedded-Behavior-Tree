@@ -15,54 +15,54 @@
   // cat: root | control | decorator | action | condition | subtree | unknown
   // field: the editable value shown on the card and in the properties panel
   var TYPES = {
-    root: { cat: 'root', label: 'Root', icon: 'root', maxChildren: 1, desc: 'Início da árvore. Aceita exatamente 1 filho.' },
+    root: { cat: 'root', label: 'Root', icon: 'root', maxChildren: 1, desc: 'Start of the tree. Accepts exactly 1 child.' },
 
     sequence: { cat: 'control', tag: 'Sequence', label: 'Sequence', icon: 'sequence', maxChildren: Infinity,
-      desc: 'Lógica E: executa os filhos em ordem e para no primeiro que falhar.' },
+      desc: 'AND logic: runs the children in order and stops at the first one that fails.' },
     fallback: { cat: 'control', tag: 'Fallback', label: 'Fallback', icon: 'fallback', maxChildren: Infinity,
-      desc: 'Lógica OU: executa os filhos em ordem e para no primeiro que tiver sucesso.' },
+      desc: 'OR logic: runs the children in order and stops at the first one that succeeds.' },
     reactive_sequence: { cat: 'control', tag: 'ReactiveSequence', label: 'Reactive Sequence', icon: 'reactive_sequence', maxChildren: Infinity,
-      desc: 'Como o Sequence, mas reavalia os filhos anteriores a cada tick.' },
+      desc: 'Like Sequence, but re-evaluates the previous children on every tick.' },
     reactive_fallback: { cat: 'control', tag: 'ReactiveFallback', label: 'Reactive Fallback', icon: 'reactive_fallback', maxChildren: Infinity,
-      desc: 'Como o Fallback, mas reavalia os filhos anteriores a cada tick.' },
+      desc: 'Like Fallback, but re-evaluates the previous children on every tick.' },
 
     action: { cat: 'action', tag: 'Script', label: 'Action', icon: 'action', maxChildren: 0,
-      field: { key: 'code', attr: 'code', kind: 'ident', label: 'Função', placeholder: 'nome_da_funcao', required: true },
-      desc: 'Folha de ação: chama a função C implementada no firmware.' },
+      field: { key: 'code', attr: 'code', kind: 'ident', label: 'Function', placeholder: 'nome_da_funcao', required: true },
+      desc: 'Action leaf: calls the C function implemented in the firmware.' },
     condition: { cat: 'condition', tag: 'ScriptCondition', label: 'Condition', icon: 'condition', maxChildren: 0,
-      field: { key: 'code', attr: 'code', kind: 'ident', label: 'Função', placeholder: 'nome_da_condicao', required: true },
-      desc: 'Folha de condição: chama a função C que retorna sucesso ou falha.' },
+      field: { key: 'code', attr: 'code', kind: 'ident', label: 'Function', placeholder: 'nome_da_condicao', required: true },
+      desc: 'Condition leaf: calls the C function that returns success or fail.' },
     sleep: { cat: 'action', tag: 'Sleep', label: 'Sleep', icon: 'sleep', maxChildren: 0,
-      field: { key: 'msec', attr: 'msec', kind: 'uint', min: 0, max: UINT32_MAX, unit: 'ms', label: 'Duração', required: true, def: 1000 },
-      desc: 'Espera um tempo (em ms). Máximo 4294967295 (uint32).' },
+      field: { key: 'msec', attr: 'msec', kind: 'uint', min: 0, max: UINT32_MAX, unit: 'ms', label: 'Duration', required: true, def: 1000 },
+      desc: 'Waits for a time (in ms). Maximum 4294967295 (uint32).' },
 
     retry: { cat: 'decorator', tag: 'RetryUntilSuccessful', label: 'Retry Until Success', icon: 'retry', maxChildren: 1,
-      field: { key: 'num', attr: 'num_attempts', kind: 'uint', min: 1, max: UINT16_MAX, unit: 'tentativas', label: 'Tentativas', required: true, def: 3 },
-      desc: 'Executa o filho até X vezes enquanto ele falhar.' },
+      field: { key: 'num', attr: 'num_attempts', kind: 'uint', min: 1, max: UINT16_MAX, unit: 'attempts', label: 'Attempts', required: true, def: 3 },
+      desc: 'Runs the child up to X times while it fails.' },
     repeat: { cat: 'decorator', tag: 'Repeat', label: 'Repeat', icon: 'repeat', maxChildren: 1,
-      field: { key: 'num', attr: 'num_cycles', kind: 'uint', min: 1, max: UINT16_MAX, unit: 'vezes', label: 'Repetições', required: true, def: 3 },
-      desc: 'Repete o filho X vezes, independente de sucesso ou falha.' },
+      field: { key: 'num', attr: 'num_cycles', kind: 'uint', min: 1, max: UINT16_MAX, unit: 'times', label: 'Repetitions', required: true, def: 3 },
+      desc: 'Repeats the child X times, regardless of success or fail.' },
     keep_running: { cat: 'decorator', tag: 'KeepRunningUntilFailure', label: 'Keep Running Until Success', icon: 'keep_running', maxChildren: 1,
-      desc: 'Executa o filho indefinidamente até ele ter sucesso.' },
+      desc: 'Runs the child indefinitely until it succeeds.' },
     inverter: { cat: 'decorator', tag: 'Inverter', label: 'Inverter', icon: 'inverter', maxChildren: 1,
-      desc: 'Inverte o resultado do filho (sucesso ↔ falha).' },
+      desc: 'Inverts the child’s result (success ↔ fail).' },
     force_success: { cat: 'decorator', tag: 'ForceSuccess', label: 'Force Success', icon: 'force_success', maxChildren: 1,
-      desc: 'Retorna sucesso sempre que o filho terminar.' },
+      desc: 'Returns success whenever the child finishes.' },
     force_failure: { cat: 'decorator', tag: 'ForceFailure', label: 'Force Fail', icon: 'force_failure', maxChildren: 1,
-      desc: 'Retorna falha sempre que o filho terminar.' },
+      desc: 'Returns fail whenever the child finishes.' },
 
     subtree: { cat: 'subtree', tag: 'SubTree', label: 'SubTree', icon: 'subtree', maxChildren: 0,
-      desc: 'Chama outra árvore do projeto. Expanda ou abra para ver os filhos.' },
+      desc: 'Calls another tree of the project. Expand or open it to see the children.' },
 
-    unknown: { cat: 'unknown', label: 'Desconhecido', icon: 'unknown', maxChildren: Infinity,
-      desc: 'Nó não suportado pelo firmware (preservado na exportação).' }
+    unknown: { cat: 'unknown', label: 'Unknown', icon: 'unknown', maxChildren: Infinity,
+      desc: 'Node not supported by the firmware (kept on export).' }
   };
 
   var PALETTE = [
-    { title: 'Controle', types: ['sequence', 'fallback', 'reactive_sequence', 'reactive_fallback'] },
-    { title: 'Ação', types: ['action', 'condition', 'sleep'] },
-    { title: 'Decorador', types: ['retry', 'repeat', 'keep_running', 'inverter', 'force_success', 'force_failure'] },
-    { title: 'Subárvore', types: ['subtree'] }
+    { title: 'Control', types: ['sequence', 'fallback', 'reactive_sequence', 'reactive_fallback'] },
+    { title: 'Action', types: ['action', 'condition', 'sleep'] },
+    { title: 'Decorator', types: ['retry', 'repeat', 'keep_running', 'inverter', 'force_success', 'force_failure'] },
+    { title: 'Subtree', types: ['subtree'] }
   ];
 
   var TAG_TO_TYPE = {};
@@ -238,7 +238,7 @@
     return true;
   }
 
-  // Loose ("solto") nodes: branch roots without a parent, kept in tree.nodes with a canvas position.
+  // Loose ("loose") nodes: branch roots without a parent, kept in tree.nodes with a canvas position.
   // They are allowed while editing but block saving/exporting until linked to the tree.
   function looseRoots(tree) {
     return Object.keys(tree.nodes).filter(function (id) { var n = tree.nodes[id]; return n.type !== 'root' && !n.parent; });
@@ -360,7 +360,7 @@
     var stack = [rootEl];
     function err(msg) {
       var line = text.slice(0, pos).split('\n').length;
-      throw new Error('XML inválido (linha ' + line + '): ' + msg);
+      throw new Error('Invalid XML (line ' + line + '): ' + msg);
     }
     while (pos < len) {
       var lt = text.indexOf('<', pos);
@@ -368,29 +368,29 @@
       pos = lt;
       if (text.startsWith('<!--', pos)) {
         var endC = text.indexOf('-->', pos);
-        if (endC < 0) err('comentário não fechado');
+        if (endC < 0) err('unclosed comment');
         pos = endC + 3;
       } else if (text.startsWith('<?', pos)) {
         var endP = text.indexOf('?>', pos);
-        if (endP < 0) err('instrução não fechada');
+        if (endP < 0) err('unclosed instruction');
         pos = endP + 2;
       } else if (text.startsWith('<![CDATA[', pos)) {
         var endD = text.indexOf(']]>', pos);
-        if (endD < 0) err('CDATA não fechado');
+        if (endD < 0) err('unclosed CDATA');
         pos = endD + 3;
       } else if (text.startsWith('<!', pos)) {
         var endB = text.indexOf('>', pos);
         pos = endB < 0 ? len : endB + 1;
       } else if (text[pos + 1] === '/') {
         var endT = text.indexOf('>', pos);
-        if (endT < 0) err('tag não fechada');
+        if (endT < 0) err('unclosed tag');
         var closeName = text.slice(pos + 2, endT).trim();
         var top = stack.pop();
-        if (!top || top.tag !== closeName) err('esperado </' + (top ? top.tag : '?') + '>, encontrado </' + closeName + '>');
+        if (!top || top.tag !== closeName) err('expected </' + (top ? top.tag : '?') + '>, found </' + closeName + '>');
         pos = endT + 1;
       } else {
         var m = /^<([A-Za-z_][\w:.-]*)/.exec(text.slice(pos, pos + 200));
-        if (!m) err('tag inválida');
+        if (!m) err('invalid tag');
         var el = { tag: m[1], attrs: {}, children: [] };
         pos += m[0].length;
         var attrRe = /\s*([A-Za-z_][\w:.-]*)\s*=\s*("([^"]*)"|'([^']*)')|\s*(\/?)>/y;
@@ -398,19 +398,19 @@
         while (pos < len) {
           attrRe.lastIndex = pos;
           var a = attrRe.exec(text);
-          if (!a) err('atributo inválido em <' + el.tag + '>');
+          if (!a) err('invalid attribute in <' + el.tag + '>');
           pos = attrRe.lastIndex;
           if (a[1]) { el.attrs[a[1]] = decodeEntities(a[3] !== undefined ? a[3] : a[4]); continue; }
           selfClosing = a[5] === '/';
           closed = true;
           break;
         }
-        if (!closed) err('tag <' + el.tag + '> não fechada');
+        if (!closed) err('tag <' + el.tag + '> not closed');
         stack[stack.length - 1].children.push(el);
         if (!selfClosing) stack.push(el);
       }
     }
-    if (stack.length !== 1) err('tag <' + stack[stack.length - 1].tag + '> não fechada');
+    if (stack.length !== 1) err('tag <' + stack[stack.length - 1].tag + '> not closed');
     return rootEl;
   }
 
@@ -444,7 +444,7 @@
   function importXml(text, fallbackName) {
     var doc = parseXml(text);
     var rootEl = doc.children.find(function (c) { return c.tag === 'root'; });
-    if (!rootEl) throw new Error('Arquivo sem elemento <root>.');
+    if (!rootEl) throw new Error('File without a <root> element.');
     var bts = rootEl.children.filter(function (c) { return c.tag === 'BehaviorTree'; });
     var includes = rootEl.children.filter(function (c) { return c.tag === 'include'; }).map(function (c) { return c.attrs.path; });
     var trees = [];
@@ -476,7 +476,7 @@
       }
     }
     return {
-      name: rootEl.attrs.project_name || fallbackName || 'Projeto',
+      name: rootEl.attrs.project_name || fallbackName || 'Project',
       mainTreeName: mainName,
       trees: trees,
       includes: includes
@@ -638,16 +638,16 @@
     if (!f) return null;
     var v = value === undefined || value === null ? '' : String(value).trim();
     if (f.kind === 'ident') {
-      if (!v) return 'Nome da função é obrigatório.';
-      if (!C_IDENT_RE.test(v)) return 'Nome de função inválido em C: use letras, números e _ (sem começar com número).';
+      if (!v) return 'Function name is required.';
+      if (!C_IDENT_RE.test(v)) return 'Invalid C function name: use letters, digits and _ (not starting with a digit).';
       return null;
     }
     if (f.kind === 'uint') {
-      if (!v) return f.label + ' é obrigatório.';
-      if (!/^\d+$/.test(v)) return f.label + ' deve conter apenas números.';
+      if (!v) return f.label + ' is required.';
+      if (!/^\d+$/.test(v)) return f.label + ' must contain digits only.';
       var num = Number(v);
-      if (num < f.min) return f.label + ' deve ser no mínimo ' + f.min + '.';
-      if (num > f.max) return f.label + ' deve ser no máximo ' + f.max + '.';
+      if (num < f.min) return f.label + ' must be at least ' + f.min + '.';
+      if (num > f.max) return f.label + ' must be at most ' + f.max + '.';
     }
     return null;
   }
@@ -685,32 +685,32 @@
     var issues = [];
     var cycles = subtreeCycle(project);
     var names = {};
-    if (!project.trees[project.mainTreeId]) issues.push({ level: 'error', message: 'O projeto não possui árvore principal.' });
-    if (!C_IDENT_RE.test(project.name)) issues.push({ level: 'warning', message: 'Nome do projeto "' + project.name + '" não é um identificador C válido (usado nos nomes gerados).' });
+    if (!project.trees[project.mainTreeId]) issues.push({ level: 'error', message: 'The project has no main tree.' });
+    if (!C_IDENT_RE.test(project.name)) issues.push({ level: 'warning', message: 'Project name "' + project.name + '" is not a valid C identifier (used in the generated names).' });
     project.treeOrder.forEach(function (tid) {
       var tree = project.trees[tid];
-      if (names[tree.name]) issues.push({ level: 'error', treeId: tid, message: 'Nome de árvore duplicado: ' + tree.name });
+      if (names[tree.name]) issues.push({ level: 'error', treeId: tid, message: 'Duplicate tree name: ' + tree.name });
       names[tree.name] = true;
-      if (!C_IDENT_RE.test(tree.name)) issues.push({ level: 'error', treeId: tid, nodeId: tree.rootId, message: 'Nome de árvore inválido: "' + tree.name + '" (use letras, números e _).' });
-      if (cycles[tid]) issues.push({ level: 'error', treeId: tid, nodeId: tree.rootId, message: 'A árvore ' + tree.name + ' chama a si mesma via SubTree (ciclo).' });
+      if (!C_IDENT_RE.test(tree.name)) issues.push({ level: 'error', treeId: tid, nodeId: tree.rootId, message: 'Invalid tree name: "' + tree.name + '" (use letters, digits and _).' });
+      if (cycles[tid]) issues.push({ level: 'error', treeId: tid, nodeId: tree.rootId, message: 'Tree ' + tree.name + ' calls itself through a SubTree (cycle).' });
       Object.keys(tree.nodes).forEach(function (nid) {
         var n = tree.nodes[nid];
         var t = TYPES[n.type];
         var where = { treeId: tid, nodeId: nid };
         function add(level, msg) { issues.push(Object.assign({ level: level, message: msg }, where)); }
         if (n.type === 'root') {
-          if (n.children.length === 0) add('error', tree.name + ': a Root precisa de 1 filho.');
-          if (n.children.length > 1) add('error', tree.name + ': a Root aceita apenas 1 filho.');
+          if (n.children.length === 0) add('error', tree.name + ': the Root needs 1 child.');
+          if (n.children.length > 1) add('error', tree.name + ': the Root accepts only 1 child.');
         } else if (t.cat === 'control') {
-          if (n.children.length === 0) add('error', t.label + (n.props.label ? ' "' + n.props.label + '"' : '') + ' precisa de pelo menos 1 filho.');
+          if (n.children.length === 0) add('error', t.label + (n.props.label ? ' "' + n.props.label + '"' : '') + ' needs at least 1 child.');
         } else if (t.cat === 'decorator') {
-          if (n.children.length !== 1) add('error', t.label + ' precisa de exatamente 1 filho.');
+          if (n.children.length !== 1) add('error', t.label + ' needs exactly 1 child.');
         } else if (n.type === 'subtree') {
-          if (!project.trees[n.props.ref]) add('error', 'SubTree sem árvore válida' + (n.props.missingRef ? ' ("' + n.props.missingRef + '" não existe)' : '') + '.');
+          if (!project.trees[n.props.ref]) add('error', 'SubTree without a valid tree' + (n.props.missingRef ? ' ("' + n.props.missingRef + '" does not exist)' : '') + '.');
         } else if (n.type === 'unknown') {
-          add('warning', 'Nó <' + n.props.tag + '> não é suportado pelo firmware.');
+          add('warning', 'Node <' + n.props.tag + '> is not supported by the firmware.');
         }
-        if (n.type !== 'root' && !n.parent) add('error', tree.name + ': ' + t.label + (t.field && n.props[t.field.key] ? ' "' + n.props[t.field.key] + '"' : '') + ' está solto — ligue-o a um pai para poder salvar.');
+        if (n.type !== 'root' && !n.parent) add('error', tree.name + ': ' + t.label + (t.field && n.props[t.field.key] ? ' "' + n.props[t.field.key] + '"' : '') + ' is loose: link it to a parent to be able to save.');
         var fe = fieldError(n.type, t.field ? n.props[t.field.key] : undefined);
         if (fe) add('error', fe);
       });

@@ -1,4 +1,4 @@
-// "Gerar código C" dialog: header fields, C project and prefix, folder picker, file preview,
+// "Generate C code" dialog: header fields, C project and prefix, folder picker, file preview,
 // generation on disk and settings saved with the project.
 const fs = require('fs');
 const path = require('path');
@@ -24,12 +24,12 @@ const { chromium } = require('playwright-core');
   await pg.fill('#genOutput', ws);
   await pg.click('#genBrowse');
   await pg.waitForSelector('#genBrowser .gen-bbar');
-  await pg.click('#genBrowser button:has-text("Nova pasta")');
-  await pg.waitForSelector('.modal h3:text("Nova pasta")');
+  await pg.click('#genBrowser button:has-text("New folder")');
+  await pg.waitForSelector('.modal h3:text("New folder")');
   await pg.locator('.modal').last().locator('input').fill('firmware');
   await pg.locator('.modal').last().locator('.btn.primary').click();
   await pg.waitForFunction(() => /\/firmware$/.test(document.querySelector('#genBrowser .gen-bpath').textContent));
-  await pg.click('#genBrowser button:has-text("Usar esta pasta")');
+  await pg.click('#genBrowser button:has-text("Use this folder")');
   const out = path.join(ws, 'firmware');
   ok('picked folder fills the output', await pg.inputValue('#genOutput') === out);
 
@@ -41,19 +41,20 @@ const { chromium } = require('playwright-core');
   await pg.fill('#genPrefix', 'acme');
   await pg.waitForFunction(() => /btree_porta_fw/.test(document.getElementById('genPreview').textContent));
   const tree = await pg.locator('#genPreview').innerText();
-  ok('preview shows tools/ include/ src/ with btree_<projeto>/', /tools\/[\s\S]*btree_porta_fw\/[\s\S]*porta_fw\.xml[\s\S]*include\/[\s\S]*src\//.test(tree));
-  ok('preview marks new files', (tree.match(/novo/g) || []).length === 9, (tree.match(/novo/g) || []).length);
+  ok('preview shows tools/ include/ src/ with btree_<project>/', /tools\/[\s\S]*btree_porta_fw\/[\s\S]*porta_fw\.xml[\s\S]*include\/[\s\S]*src\//.test(tree));
+  const nNew = await pg.locator('#genPreview .gen-tag.new').count();
+  ok('preview marks new files', nNew === 9, nNew);
 
   await pg.fill('#genProject', '9bad');
   await pg.waitForTimeout(400);
-  ok('invalid C name is reported', /Projeto/.test(await pg.locator('#genError').innerText()));
+  ok('invalid C name is reported', /Project/.test(await pg.locator('#genError').innerText()));
   await pg.click('.modal-foot .btn.primary');
   ok('generate is blocked while invalid', await pg.locator('#genProject').isVisible());
   await pg.fill('#genProject', 'porta_fw');
   await pg.waitForTimeout(400);
 
   await pg.click('.modal-foot .btn.primary');
-  await pg.waitForSelector('.modal h3:text("Código gerado")');
+  await pg.waitForSelector('.modal h3:text("Code generated")');
   await pg.click('.modal-foot .btn.primary');
   const src = path.join(out, 'src/btree_porta_fw/btree_porta_fw_main.c');
   ok('files written in the chosen folder', fs.existsSync(src) && fs.existsSync(path.join(out, 'tools/btree_porta_fw/porta_fw.xml')));
@@ -66,8 +67,8 @@ const { chromium } = require('playwright-core');
   await pg.waitForSelector('#genPreview .gen-file');
   const again = { project: await pg.inputValue('#genProject'), prefix: await pg.inputValue('#genPrefix'), copyright: await pg.inputValue('#genCopyright'), output: await pg.inputValue('#genOutput') };
   ok('settings remembered', JSON.stringify(again) === JSON.stringify({ project: 'porta_fw', prefix: 'acme', copyright: 'ACME', output: out }), again);
-  await pg.waitForFunction(() => /mesclado/.test(document.getElementById('genPreview').textContent));
-  ok('existing user files marked as kept', /mesclado, seu código é mantido/.test(await pg.locator('#genPreview').innerText()));
+  await pg.waitForFunction(() => /merged/.test(document.getElementById('genPreview').textContent));
+  ok('existing user files marked as kept', /merged, your code is kept/.test(await pg.locator('#genPreview').innerText()));
   ok('no page errors', !errors.length, errors);
   await b.close();
 })();
