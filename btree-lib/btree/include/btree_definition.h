@@ -29,14 +29,47 @@
 #ifndef BTREE_DEFINITION_H_
 #define BTREE_DEFINITION_H_
 
-#include "stddef.h"
-#include "stdint.h"
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * @brief Define bits size of tree indexes.
  *
  */
+#ifndef BTREE_DEFINITION_SIZE
 #define BTREE_DEFINITION_SIZE 8
+#endif
+
+#if (BTREE_DEFINITION_SIZE != 8) && (BTREE_DEFINITION_SIZE != 16) &&           \
+    (BTREE_DEFINITION_SIZE != 32)
+#error "BTREE_DEFINITION_SIZE must be 8, 16 or 32."
+#endif
+
+/**
+ * @brief Define bits size of the retry and repeat counters.
+ *
+ */
+#ifndef BTREE_DEFINITION_ATTEMPTS_SIZE
+#define BTREE_DEFINITION_ATTEMPTS_SIZE 8
+#endif
+
+#if (BTREE_DEFINITION_ATTEMPTS_SIZE != 8) &&                                   \
+    (BTREE_DEFINITION_ATTEMPTS_SIZE != 16) &&                                  \
+    (BTREE_DEFINITION_ATTEMPTS_SIZE != 32)
+#error "BTREE_DEFINITION_ATTEMPTS_SIZE must be 8, 16 or 32."
+#endif
+
+/**
+ * @brief Type of the counters of retry and repeat decorators.
+ *
+ */
+#if BTREE_DEFINITION_ATTEMPTS_SIZE == 32
+typedef uint32_t btree_definition_attempts_t;
+#elif BTREE_DEFINITION_ATTEMPTS_SIZE == 16
+typedef uint16_t btree_definition_attempts_t;
+#else
+typedef uint8_t btree_definition_attempts_t;
+#endif
 
 /**
  * @brief Define type of indexes.
@@ -90,11 +123,9 @@ typedef enum {
   BTREE_DEFINITION_STATUS_RUNNING = 0, /**< Status running in node or tree. */
   BTREE_DEFINITION_STATUS_SUCCESS,     /**< Status success in node or tree. */
   BTREE_DEFINITION_STATUS_FAIL,        /**< Status failed in node or tree. */
-  BTREE_DEFINITION_STATUS_RE_EXECUTE, /**< Status of new re-execution in node or
-                                         tree. */
-  BTREE_DEFINITION_STATUS_STAND_BY,   /**< Status stand by in actions nodes. */
-  BTREE_DEFINITION_STATUS_ERROR,      /**< Status error in node or tree. */
-  __BTREE_DEFINITION_STATUS_AMOUNT,   /**< Status amount in lib. */
+  BTREE_DEFINITION_STATUS_STAND_BY,    /**< Status stand by in actions nodes. */
+  BTREE_DEFINITION_STATUS_ERROR,       /**< Status error in node or tree. */
+  __BTREE_DEFINITION_STATUS_AMOUNT,    /**< Status amount in lib. */
 } btree_definition_status_t;
 
 /**
@@ -102,48 +133,46 @@ typedef enum {
  *
  */
 typedef enum {
-  BTREE_DEFINITION_NODE_CONDITION =
-      0,                        /**< Type of interaction condition node. */
-  BTREE_DEFINITION_NODE_ACTION, /**< Type of interaction action node. */
-  BTREE_DEFINITION_NODE_ACTION_SLEEP, /**< Type of interaction action timeout
-                                           node. */
+  BTREE_DEFINITION_NODE_CONDITION = 1, /**< Type of interaction condition
+                                          node. */
+  BTREE_DEFINITION_NODE_ACTION,        /**< Type of interaction action node. */
+  BTREE_DEFINITION_NODE_ACTION_SLEEP,  /**< Type of interaction action timeout
+                                          node. */
   BTREE_DEFINITION_NODE_RETRY_UNTIL_SUCCESS, /**< Type of decorator type retry
                                                 until success. */
   BTREE_DEFINITION_NODE_REPEAT, /**< Type of decorator type repeat. */
-  BTREE_DEFINITION_NODE_KEEP_RUNNING_UNTIL_SUCCESS, /**< Type of decorator type
+  BTREE_DEFINITION_NODE_KEEP_RUNNING_UNTIL_FAILURE, /**< Type of decorator type
                                                        keep running until
-                                                       success. */
+                                                       failure. */
   BTREE_DEFINITION_NODE_INVERTER,      /**< Type of decorator type inverter. */
   BTREE_DEFINITION_NODE_FORCE_SUCCESS, /**< Type of decorator type force
                                           success. */
   BTREE_DEFINITION_NODE_FORCE_FAIL, /**< Type of decorator type force fail. */
-  BTREE_DEFINITION_NODE_REACTIVE_NODES =
-      0x10, /**< Type of decorator type timeout. */
-  BTREE_DEFINITION_NODE_REACTIVE_CONDITION,    /**< Type of reactive interaction
-                                                  condition node. */
-  BTREE_DEFINITION_NODE_REACTIVE_ACTION,       /**< Type of reactive interaction
-                                                  action node. */
+  BTREE_DEFINITION_NODE_REACTIVE_NODES = 0x10, /**< Flag of reactive nodes. */
+  BTREE_DEFINITION_NODE_REACTIVE_CONDITION, /**< Type of reactive interaction
+                                               condition node. */
+  BTREE_DEFINITION_NODE_REACTIVE_ACTION, /**< Type of reactive interaction
+                                            action node. */
   BTREE_DEFINITION_NODE_REACTIVE_ACTION_SLEEP, /**< Type of reactive
-                                                    interaction action timeout
-                                                    node. */
+                                                  interaction action timeout
+                                                  node. */
   BTREE_DEFINITION_NODE_REACTIVE_RETRY_UNTIL_SUCCESS, /**< Type of reactive
                                                          decorator type retry
                                                          until success. */
   BTREE_DEFINITION_NODE_REACTIVE_REPEAT, /**< Type of reactive decorator type
                                             repeat. */
-  BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_SUCCESS, /**< Type of
+  BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_FAILURE, /**< Type of
                                                                 reactive
                                                                 decorator type
                                                                 keep running
-                                                                until success.
-                                                              */
+                                                                until
+                                                                failure. */
   BTREE_DEFINITION_NODE_REACTIVE_INVERTER, /**< Type of reactive decorator type
                                               inverter. */
   BTREE_DEFINITION_NODE_REACTIVE_FORCE_SUCCESS, /**< Type of reactive decorator
                                                    type force success. */
   BTREE_DEFINITION_NODE_REACTIVE_FORCE_FAIL,    /**< Type of reactive decorator
                                                    type force fail. */
-  __BTREE_DEFINITION_NODE_AMOUNT,               /**< Amount of nodes. */
 } btree_definition_node_type_t;
 
 /**
@@ -151,9 +180,9 @@ typedef enum {
  *
  */
 typedef struct btree_definition_node_decorator {
-  btree_index_t node_limit; /**< Last node limit with retry decorators. */
-  uint16_t times;           /**< Times of retry ramification. */
-  uint8_t index;            /**< Local of memory buffer to save retry number. */
+  btree_definition_attempts_t times; /**< Times of retry ramification. */
+  btree_index_t index;      /**< Local of memory buffer to save retry number. */
+  btree_index_t node_limit; /**< Last node of the decorator child. */
 } btree_definition_node_decorator_t;
 
 /**
@@ -174,9 +203,13 @@ typedef struct btree_definition_node_interaction {
  *
  */
 typedef struct btree_definition_node {
-  btree_definition_node_type_t node_type; /**< Node type. */
+  uint8_t node_type;      /**< Node type. */
   btree_index_t st_index; /**< Index to next node struture if have success. */
   btree_index_t ft_index; /**< Index to next node struture if have fail. */
+  btree_index_t reactive_index; /**< Reactive node: first node of its reactive
+                                   control. Common node: reactive node of the
+                                   reactive child that contains it.
+                                   BTREE_DEFINITION_TREE_UNRELATED if none. */
   union {
     btree_definition_node_interaction_t
         interaction_node; /**< interaction type node. */
@@ -187,11 +220,11 @@ typedef struct btree_definition_node {
 
 /**
  * @brief Structure of debug tree.
- * 
+ *
  */
 typedef struct btree_definition_debug {
-  const char *const tree_name;                     /**< Name of tree. */
-  const char *const *functions_name;               /**< Name of function. */
+  const char *const tree_name;       /**< Name of tree. */
+  const char *const *functions_name; /**< Name of function. */
 } btree_definition_debug_t;
 
 /**
@@ -199,13 +232,15 @@ typedef struct btree_definition_debug {
  *
  */
 typedef struct btree_definition_tree_data {
-  btree_definition_status_t last_node_state; /**< State of tree execution. */
-  btree_index_t node_index;                  /**< Node to be executed. */
-  btree_index_t tree_size;                   /**< Size of tree. */
-  uint32_t *nodes_status;                    /**< Pointer to status of nodes. */
-  uint32_t *array_attempts;                  /**< Pointer to attempts array. */
-  const btree_definition_node_t *tree;       /**< Pointer to tree. */
-  const btree_definition_debug_t *debug;     /**< Pointer to debug items. */
+  uint8_t last_node_state;  /**< State of tree execution. */
+  btree_index_t node_index; /**< Node to be executed. */
+  btree_index_t tree_size;  /**< Size of tree. */
+  btree_index_t tick_index; /**< Node where the current tick resumed the tree,
+                               in case reactive. */
+  btree_definition_attempts_t *array_attempts; /**< Pointer to attempts
+                                                  array. */
+  const btree_definition_node_t *tree;   /**< Pointer to tree. */
+  const btree_definition_debug_t *debug; /**< Pointer to debug items. */
 } btree_definition_tree_data_t;
 
 /**
@@ -229,36 +264,51 @@ typedef struct btree_definition_config_functions {
 } btree_definition_config_functions_t;
 
 /**
- * @brief Macro that creates condition node condition.
+ * @brief Fields common to every node: type, success and fail targets and the
+ * reactive index.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_CONDITION(_success_target, _fail_target,  \
-                                               _function)                      \
+#define BTREE_DEFINITION_CREATE_NODE(_type, _success_target, _fail_target,     \
+                                     _reactive_index)                          \
+  .node_type = _type, .st_index = _success_target, .ft_index = _fail_target,   \
+  .reactive_index = _reactive_index
+
+/**
+ * @brief Macro that creates condition node.
+ *
+ */
+#define BTREE_DEFINITION_CREATE_NODE_CONDITION(                                \
+    _success_target, _fail_target, _reactive_index, _function)                 \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_CONDITION, .st_index = _success_target, \
-    .ft_index = _fail_target, .interaction_node.function = _function,          \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_CONDITION,              \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
+    .interaction_node.function = _function,                                    \
   }
 
 /**
- * @brief Macro that creates action node common.
+ * @brief Macro that creates action node.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_ACTION(_success_target, _fail_target,     \
-                                            _function)                         \
+#define BTREE_DEFINITION_CREATE_NODE_ACTION(                                   \
+    _success_target, _fail_target, _reactive_index, _function)                 \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_ACTION, .st_index = _success_target,    \
-    .ft_index = _fail_target, .interaction_node.function = _function,          \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_ACTION,                 \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
+    .interaction_node.function = _function,                                    \
   }
 
 /**
  * @brief Macro that creates action sleep node.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_ACTION_SLEEP(_success_target,             \
-                                                  _fail_target, _time_ms)      \
+#define BTREE_DEFINITION_CREATE_NODE_ACTION_SLEEP(                             \
+    _success_target, _fail_target, _reactive_index, _time_ms)                  \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_ACTION_SLEEP,                           \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_ACTION_SLEEP,           \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
     .interaction_node.timeout_ms = _time_ms,                                   \
   }
 
@@ -267,24 +317,31 @@ typedef struct btree_definition_config_functions {
  *
  */
 #define BTREE_DEFINITION_CREATE_NODE_RETRY_UNTIL_SUCCESS(                      \
-    _success_target, _fail_target, _attempts, _index, _node_limit)             \
+    _success_target, _fail_target, _reactive_index, _times, _index,            \
+    _node_limit)                                                               \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_RETRY_UNTIL_SUCCESS,                    \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_RETRY_UNTIL_SUCCESS,    \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
+    .decorator_node.times = _times,                                            \
+    .decorator_node.index = _index,                                            \
     .decorator_node.node_limit = _node_limit,                                  \
-    .decorator_node.times = _attempts, .decorator_node.index = _index,         \
   }
 
 /**
  * @brief Macro that creates repeat node.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_REPEAT(_success_target, _fail_target,     \
-                                            _times, _local, _node_limit)       \
+#define BTREE_DEFINITION_CREATE_NODE_REPEAT(                                   \
+    _success_target, _fail_target, _reactive_index, _times, _index,            \
+    _node_limit)                                                               \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_REPEAT, .st_index = _success_target,    \
-    .ft_index = _fail_target, .decorator_node.node_limit = _node_limit,        \
-    .decorator_node.times = _times, .decorator_node.index = _local,            \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_REPEAT,                 \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
+    .decorator_node.times = _times,                                            \
+    .decorator_node.index = _index,                                            \
+    .decorator_node.node_limit = _node_limit,                                  \
   }
 
 /**
@@ -292,10 +349,11 @@ typedef struct btree_definition_config_functions {
  *
  */
 #define BTREE_DEFINITION_CREATE_NODE_KEEP_RUNNING_UNTIL_FAILURE(               \
-    _success_target, _fail_target, _node_limit)                                \
+    _success_target, _fail_target, _reactive_index, _node_limit)               \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_KEEP_RUNNING_UNTIL_SUCCESS,             \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(                                              \
+        BTREE_DEFINITION_NODE_KEEP_RUNNING_UNTIL_FAILURE,                      \
+        _success_target, _fail_target, _reactive_index),                       \
     .decorator_node.node_limit = _node_limit,                                  \
   }
 
@@ -303,54 +361,61 @@ typedef struct btree_definition_config_functions {
  * @brief Macro that creates inverter node.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_INVERTER(_success_target, _fail_target)   \
+#define BTREE_DEFINITION_CREATE_NODE_INVERTER(                                 \
+    _success_target, _fail_target, _reactive_index)                            \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_INVERTER, .st_index = _success_target,  \
-    .ft_index = _fail_target,                                                  \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_INVERTER,               \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
   }
 
 /**
  * @brief Macro that creates force success node.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_FORCE_SUCCESS(_success_target,            \
-                                                   _fail_target)               \
+#define BTREE_DEFINITION_CREATE_NODE_FORCE_SUCCESS(                            \
+    _success_target, _fail_target, _reactive_index)                            \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_FORCE_SUCCESS,                          \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_FORCE_SUCCESS,          \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
   }
 
 /**
  * @brief Macro that creates force fail node.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_FORCE_FAIL(_success_target, _fail_target) \
+#define BTREE_DEFINITION_CREATE_NODE_FORCE_FAIL(                               \
+    _success_target, _fail_target, _reactive_index)                            \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_FORCE_FAIL,                             \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_FORCE_FAIL,             \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
   }
 
 /**
- * @brief Macro that creates condition reactive node.
+ * @brief Macro that creates reactive condition node.
  *
  */
 #define BTREE_DEFINITION_CREATE_NODE_REACTIVE_CONDITION(                       \
-    _success_target, _fail_target, _function)                                  \
+    _success_target, _fail_target, _reactive_index, _function)                 \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_REACTIVE_CONDITION,                     \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_REACTIVE_CONDITION,     \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
     .interaction_node.function = _function,                                    \
   }
 
 /**
- * @brief Macro that creates action reactive node.
+ * @brief Macro that creates reactive action node.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_REACTIVE_ACTION(_success_target,          \
-                                                     _fail_target, _function)  \
+#define BTREE_DEFINITION_CREATE_NODE_REACTIVE_ACTION(                          \
+    _success_target, _fail_target, _reactive_index, _function)                 \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_REACTIVE_ACTION,                        \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_REACTIVE_ACTION,        \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
     .interaction_node.function = _function,                                    \
   }
 
@@ -359,82 +424,93 @@ typedef struct btree_definition_config_functions {
  *
  */
 #define BTREE_DEFINITION_CREATE_NODE_REACTIVE_ACTION_SLEEP(                    \
-    _success_target, _fail_target, _time_ms)                                   \
+    _success_target, _fail_target, _reactive_index, _time_ms)                  \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_REACTIVE_ACTION_SLEEP,                  \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_REACTIVE_ACTION_SLEEP,  \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
     .interaction_node.timeout_ms = _time_ms,                                   \
   }
 
 /**
- * @brief Macro that creates retry until success reactive node.
+ * @brief Macro that creates reactive retry until success node.
  *
  */
 #define BTREE_DEFINITION_CREATE_NODE_REACTIVE_RETRY_UNTIL_SUCCESS(             \
-    _success_target, _fail_target, _attempts, _index, _node_limit)             \
+    _success_target, _fail_target, _reactive_index, _times, _index,            \
+    _node_limit)                                                               \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_REACTIVE_RETRY_UNTIL_SUCCESS,           \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(                                              \
+        BTREE_DEFINITION_NODE_REACTIVE_RETRY_UNTIL_SUCCESS,                    \
+        _success_target, _fail_target, _reactive_index),                       \
+    .decorator_node.times = _times,                                            \
+    .decorator_node.index = _index,                                            \
     .decorator_node.node_limit = _node_limit,                                  \
-    .decorator_node.times = _attempts, .decorator_node.index = _index,         \
   }
 
 /**
- * @brief Macro that creates repeat reactive node.
+ * @brief Macro that creates reactive repeat node.
  *
  */
 #define BTREE_DEFINITION_CREATE_NODE_REACTIVE_REPEAT(                          \
-    _success_target, _fail_target, _times, _index, _node_limit)                \
+    _success_target, _fail_target, _reactive_index, _times, _index,            \
+    _node_limit)                                                               \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_REACTIVE_REPEAT,                        \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
-    .decorator_node.node_limit = _node_limit, .decorator_node.times = _times,  \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_REACTIVE_REPEAT,        \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
+    .decorator_node.times = _times,                                            \
     .decorator_node.index = _index,                                            \
-  }
-
-/**
- * @brief Macro that creates keep running until failure reactive node.
- *
- */
-#define BTREE_DEFINITION_CREATE_NODE_REACTIVE_KEEP_RUNNING_UNTIL_FAILURE(      \
-    _success_target, _fail_target, _node_limit)                                \
-  {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_SUCCESS,    \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
     .decorator_node.node_limit = _node_limit,                                  \
   }
 
 /**
- * @brief Macro that creates inverter reactive node.
+ * @brief Macro that creates reactive keep running until failure node.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_REACTIVE_INVERTER(_success_target,        \
-                                                       _fail_target)           \
+#define BTREE_DEFINITION_CREATE_NODE_REACTIVE_KEEP_RUNNING_UNTIL_FAILURE(      \
+    _success_target, _fail_target, _reactive_index, _node_limit)               \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_REACTIVE_INVERTER,                      \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(                                              \
+        BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_FAILURE,             \
+        _success_target, _fail_target, _reactive_index),                       \
+    .decorator_node.node_limit = _node_limit,                                  \
   }
 
 /**
- * @brief Macro that creates force success reactive node.
+ * @brief Macro that creates reactive inverter node.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_REACTIVE_FORCE_SUCCESS(_success_target,   \
-                                                            _fail_target)      \
+#define BTREE_DEFINITION_CREATE_NODE_REACTIVE_INVERTER(                        \
+    _success_target, _fail_target, _reactive_index)                            \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_REACTIVE_FORCE_SUCCESS,                 \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_REACTIVE_INVERTER,      \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
   }
 
 /**
- * @brief Macro that creates force fail reactive node.
+ * @brief Macro that creates reactive force success node.
  *
  */
-#define BTREE_DEFINITION_CREATE_NODE_REACTIVE_FORCE_FAIL(_success_target,      \
-                                                         _fail_target)         \
+#define BTREE_DEFINITION_CREATE_NODE_REACTIVE_FORCE_SUCCESS(                   \
+    _success_target, _fail_target, _reactive_index)                            \
   {                                                                            \
-    .node_type = BTREE_DEFINITION_NODE_REACTIVE_FORCE_FAIL,                    \
-    .st_index = _success_target, .ft_index = _fail_target,                     \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_REACTIVE_FORCE_SUCCESS, \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
+  }
+
+/**
+ * @brief Macro that creates reactive force fail node.
+ *
+ */
+#define BTREE_DEFINITION_CREATE_NODE_REACTIVE_FORCE_FAIL(                      \
+    _success_target, _fail_target, _reactive_index)                            \
+  {                                                                            \
+    BTREE_DEFINITION_CREATE_NODE(BTREE_DEFINITION_NODE_REACTIVE_FORCE_FAIL,    \
+                                 _success_target, _fail_target,                \
+                                 _reactive_index),                             \
   }
 
 #endif /* BTREE_DEFINITION_H_ */

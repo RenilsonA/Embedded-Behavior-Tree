@@ -22,7 +22,7 @@ Here, the logic of `Sequence`/`Fallback` is **resolved once, at build time**. Wh
 |---|---|
 | ![conventional](docs/images/conventional-exec-08.png) | ![minimum graph](docs/images/minimum-graph-exec-04.png) |
 
-Each node ([`btree_definition.h`](btree-lib/btree/include/btree_definition.h)) holds only its type, the two next indices and a small union payload: a function pointer or a sleep timeout for leaves; `times`, a counter slot and a branch limit for decorators. Running the tree is just:
+Each node ([`btree_definition.h`](btree-lib/btree/include/btree_definition.h)) holds only its type, the two next indices, a `reactive_index` (see [Reactive](#reactive-vs-non-reactive-execution)) and a small union payload: a function pointer or a sleep timeout for leaves; `times`, a counter slot and a branch limit for decorators. Running the tree is just:
 
 ```
 run node[i]
@@ -31,7 +31,7 @@ fail    -> i = node[i].ft_index
 running -> stay here, return STAND_BY
 ```
 
-This is `btree_process_node()` in [`btree_process.c`](btree-lib/btree/src/btree_process.c). Per-node state (`Idle`/`Success`/`Fail`/`ReExecute`) is packed into **2 bits** in a shared `uint32_t` buffer. A 16-node tree uses 4 bytes of RAM for state, while the array itself lives in flash.
+This is `btree_process_node()` in [`btree_process.c`](btree-lib/btree/src/btree_process.c). No state is kept per node: the RAM of a tree is the current index, the last result and the retry/repeat counters, while the array itself lives in flash (8 bytes per node on a 32-bit MCU with 8-bit indexes).
 
 More figures from the thesis (graphs vs. DAGs, the sibling-reference intermediate structure, step-by-step executions) are in [`docs/images/`](docs/images).
 
@@ -73,7 +73,7 @@ void btree_common_debug_output(const char *line) {
 
 The debug line itself is built by the library (`btree_common_debug_print()`), so its format is always the one BTree Studio reads; lines longer than `BTREE_COMMON_DEBUG_LINE_SIZE` (160) are truncated. Debug is on when `BTREE_COMMON_DEBUG` is defined with any non-zero value (`-DBTREE_COMMON_DEBUG` alone also works) and off when it is 0 or undefined; define it wherever suits your project (compiler flag or a header included before the library).
 
-**Node types.** Every type has a `REACTIVE_*` twin (re-evaluated on each tick, see [Reactive vs non-reactive](#reactive-vs-non-reactive-execution)) and a `BTREE_DEFINITION_CREATE_NODE_*` macro, which the generator emits for you. Sequences and fallbacks are not node types: they are compiled away into the `st`/`ft` edges.
+**Node types.** Every type has a `REACTIVE_*` twin (the same type with the flag `BTREE_DEFINITION_NODE_REACTIVE_NODES`, see [Reactive vs non-reactive](#reactive-vs-non-reactive-execution)) and a `BTREE_DEFINITION_CREATE_NODE_*` macro, which the generator emits for you. Sequences and fallbacks are not node types: they are compiled away into the `st`/`ft` edges.
 
 *Leaves* (call your code or wait):
 
@@ -84,23 +84,22 @@ The debug line itself is built by the library (`btree_common_debug_print()`), so
 *Decorators* (one child branch, change how it runs or what it returns):
 
 - **`RETRY_UNTIL_SUCCESS`**: runs the branch again each time it fails, up to `times` attempts. Returns `SUCCESS` on the first success, `FAIL` when the attempts run out.
-- **`REPEAT`**: runs the branch `times` times and returns the result of the last run.
-- **`KEEP_RUNNING_UNTIL_SUCCESS`**: restarts the branch whenever it fails, with no limit, and only returns once it succeeds.
+- **`REPEAT`**: runs the branch again each time it succeeds, up to `times` runs. Returns `SUCCESS` after the last run, `FAIL` as soon as the branch fails.
+- **`KEEP_RUNNING_UNTIL_FAILURE`**: restarts the branch whenever it succeeds, with no limit, and returns `FAIL` once it fails (as in BehaviorTree.CPP).
 - **`INVERTER`**: swaps the branch result, `SUCCESS` becomes `FAIL` and vice versa.
 - **`FORCE_SUCCESS`**: runs the branch and always returns `SUCCESS`.
 - **`FORCE_FAIL`**: runs the branch and always returns `FAIL`.
 
-**Statuses:** `RUNNING`, `SUCCESS`, `FAIL`, `RE_EXECUTE` (reactive only: re-check next tick), `STAND_BY` (waiting on a pending action/condition), `ERROR` (malformed tree).
+**Statuses:** `RUNNING` (the tree moved to another node: tick again), `SUCCESS`, `FAIL`, `STAND_BY` (an action is still running: tick again later, the same node is resumed), `ERROR` (malformed tree or invalid node index).
 
 ## **API** ([`btree_manager.h`](btree-lib/btree/include/btree_manager.h))
- Every function takes the tree's control block, `btree_definition_tree_data_t` (current node, size, state buffers, array pointer), generated as `btree_<project>_control`:
+ Every function takes the tree's control block, `btree_definition_tree_data_t` (current node, size, retry/repeat counters, array pointer), generated as `btree_<project>_control`:
 
 | Function | Does |
 |---|---|
 | `btree_manager_tick_tree()` | Advances the tree one step. |
-| `btree_manager_reactivity_tick_tree()` | Same, re-evaluating reactive nodes first. |
+| `btree_manager_reactivity_tick_tree()` | Same, and at the start of each new tick re-evaluates the reactive controls above the running action. |
 | `btree_manager_reset_tree()` | Restarts the tree. |
-| `btree_manager_clear_nodes()` | Clears all node memory. |
 | `btree_manager_tick()` | Ticks and dispatches the result to your `running_case`/`success_case`/`fail_case`/`standby_case` callbacks (`btree_definition_config_functions_t`). |
 
 ## Code generation pipeline (`Scripts`)
@@ -130,7 +129,7 @@ The stages are `btree_array_creator.py` (XML → intermediate k-ary array), then
 | Files | Content | Edit? |
 |---|---|---|
 | `tools/btree_main/btree_main_array.c/h` | the flattened graph + control block `btree_main_control` | no |
-| `tools/btree_main/btree_main_common.c/h` | RAM buffers (2-bit states, decorator counters), sized for the tree | no |
+| `tools/btree_main/btree_main_common.c/h` | RAM buffers (retry/repeat counters), sized for the tree | no |
 | `tools/btree_main/<file>.xml` | a copy of the tree the code was generated from | no |
 | `include/btree_main/`, `src/btree_main/btree_main_<tree>.h/c` | one pair per `<BehaviorTree>`, with a stub (returns `SUCCESS`) for every `code` | **yes: your logic** |
 | `include/btree_main/`, `src/btree_main/btree_main_blackboard.h/c` | the data shared by the nodes (a struct you fill) | **yes** |
@@ -150,8 +149,20 @@ A real generated example is in [`examples/ble-wifi/main/build/btree_main/`](exam
 
 ## Reactive vs. non-reactive execution
 
-- **`btree_manager_tick_tree()`** advances one node per call and remembers where it stopped. It never re-checks nodes already passed, which makes it the cheapest option.
-- **`btree_manager_reactivity_tick_tree()`** first re-evaluates every `REACTIVE_*` node, then resumes where it stopped. This lets a high-priority condition interrupt the running branch, at the cost of visiting more nodes per tick.
+Both ticks execute one node per call. A *tick* in the BehaviorTree.CPP sense (`tickOnce()`) is calling the function while it returns `RUNNING`; it ends in `STAND_BY` (an action is still running), `SUCCESS` or `FAIL`.
+
+- **`btree_manager_tick_tree()`** resumes the running action and never re-checks nodes already passed: `ReactiveSequence`/`ReactiveFallback` behave as `Sequence`/`Fallback`. It is the cheapest option.
+- **`btree_manager_reactivity_tick_tree()`** behaves as in BehaviorTree.CPP. On the first call of a new tick (after a `STAND_BY`), the reactive controls that contain the running action re-execute their children placed before it, from the outermost control to the innermost. If every result is the same, the tree goes back to the action. If one changed (a guard condition now fails, a higher-priority branch of a `ReactiveFallback` now succeeds), the action is abandoned and the tree follows the new path. Each node is called at most once per tick.
+
+How the library knows what to re-evaluate without keeping the state of each node: the generator marks as reactive only the first node of each child (except the first child) of a `ReactiveSequence`/`ReactiveFallback`, and fills `reactive_index` in every node:
+
+| Node | `reactive_index` |
+|---|---|
+| reactive node | first node of its reactive control |
+| common node inside a reactive child | the reactive node that starts that child |
+| any other node | `BTREE_DEFINITION_TREE_UNRELATED` |
+
+From the running action, the library follows `reactive_index` up to each enclosing reactive control and re-executes the interval `[first node of the control, start of the child that holds the action)`. The cost is paid once per tick and grows with the nesting depth of reactive controls, not with the size of the tree. Loops (`RETRY_UNTIL_SUCCESS`, `REPEAT`, `KEEP_RUNNING_UNTIL_FAILURE`) under a reactive control also re-check the conditions above them between iterations, as BehaviorTree.CPP 4 does; `tick_index` in the control block records where the current tick resumed to tell a new iteration from one started in a previous tick.
 
 Use `ReactiveSequence`/`ReactiveFallback` only on branches that really need instant reaction, so the rest stays cheap.
 
@@ -183,7 +194,7 @@ Full guide: [`btree_studio/README.md`](btree_studio/README.md).
 
 ## Memory footprint
 
-Index size is set by `BTREE_DEFINITION_SIZE` in `btree_definition.h`: 8, 16 or 32 bits, with 8 as the default (up to 255 nodes). Per tree, RAM is just 2 bits per node of state plus one `uint32_t` per counting decorator. The exact numbers are in the generated `btree_<project>_common.h`.
+Index size is set by `BTREE_DEFINITION_SIZE`: 8, 16 or 32 bits, with 8 as the default (up to 255 nodes per tree). It is one value for the whole firmware, defined in the compiler flags (e.g. `-DBTREE_DEFINITION_SIZE=16`). The generator writes in each tree's `_array.h` the size that tree needs (`<PREFIX>BTREE_<PROJECT>_INDEX_SIZE`), and the build stops with a clear message if the firmware uses a smaller one: use the largest value among your trees. The retry/repeat counters work the same way with `BTREE_DEFINITION_ATTEMPTS_SIZE` (8 bits by default, up to 255 attempts or cycles) and `<PREFIX>BTREE_<PROJECT>_ATTEMPTS_SIZE`. Per tree, RAM is only the control block plus one counter per `RETRY_UNTIL_SUCCESS`/`REPEAT`: no state is kept per node. With 8-bit indexes a node takes 8 bytes of flash on a 32-bit MCU. The exact numbers are in the generated `btree_<project>_common.h`.
 
 ## License
 

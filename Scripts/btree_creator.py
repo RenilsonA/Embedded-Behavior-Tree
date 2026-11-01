@@ -17,6 +17,7 @@ class ARCHIVE_CREATOR:
         self.prefix = ""
         self.func_commented = []
         self.func_empty = []
+        self.attempts_value_max = 0
 
     def set_text(self, name = None, email = None, version = None, copyrights = None, project = None, prefix = None):
         self.name = name if name != None else input("Put your name:")
@@ -157,6 +158,29 @@ class ARCHIVE_CREATOR:
         self.text         += f" * @brief {self.project[:-1].lower()} tree size.\n"
         self.text         += " *\n */\n"
         self.text         += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}ARRAY_SIZE {tree_size}\n\n"
+        index_size = 8 if tree_size <= 0xFF else 16 if tree_size <= 0xFFFF else 32
+        size_name  = f"{self.prefix.upper()}BTREE_{self.project.upper()}INDEX_SIZE"
+        self.text         += "/**\n"
+        self.text         += f" * @brief Smallest BTREE_DEFINITION_SIZE that holds the {self.project[:-1].lower()} tree.\n"
+        self.text         += " * The library is built with a single BTREE_DEFINITION_SIZE: use the largest\n"
+        self.text         += " * value among all the trees of the firmware.\n"
+        self.text         += " *\n */\n"
+        self.text         += f"#define {size_name} {index_size}\n\n"
+        self.text         += f"#if BTREE_DEFINITION_SIZE < {size_name}\n"
+        self.text         += f"#error \"The {self.project[:-1].lower()} tree has {tree_size} nodes: build with BTREE_DEFINITION_SIZE={index_size} or more.\"\n"
+        self.text         += "#endif\n\n"
+        value         = self.attempts_value_max
+        attempts_size = 8 if value <= 0xFF else 16 if value <= 0xFFFF else 32
+        attempts_name = f"{self.prefix.upper()}BTREE_{self.project.upper()}ATTEMPTS_SIZE"
+        self.text         += "/**\n"
+        self.text         += f" * @brief Smallest BTREE_DEFINITION_ATTEMPTS_SIZE that holds the counters of the {self.project[:-1].lower()} tree.\n"
+        self.text         += " * The library is built with a single BTREE_DEFINITION_ATTEMPTS_SIZE: use the\n"
+        self.text         += " * largest value among all the trees of the firmware.\n"
+        self.text         += " *\n */\n"
+        self.text         += f"#define {attempts_name} {attempts_size}\n\n"
+        self.text         += f"#if BTREE_DEFINITION_ATTEMPTS_SIZE < {attempts_name}\n"
+        self.text         += f"#error \"The {self.project[:-1].lower()} tree has a retry/repeat of {value}: build with BTREE_DEFINITION_ATTEMPTS_SIZE={attempts_size} or more.\"\n"
+        self.text         += "#endif\n\n"
         self.text         += "/**\n"
         self.text         += f" * @brief Array containing the nodes of the {self.project[:-1].lower()} tree.\n"
         self.text         += " *\n */\n"

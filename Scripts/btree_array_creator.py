@@ -36,6 +36,7 @@ class BTREE_ARRAY:
         self.node_index_invalid = 'TC_BHT_DEFINITION_TREE_UNRELATED'
         self.attempts = 0
         self.attempts_max = 0
+        self.attempts_value_max = 0
         self.attempts_blocks = 0
         self.tree_remodeled_size = 0
         self.archive = ""        
@@ -141,6 +142,7 @@ class BTREE_ARRAY:
                 self.functions[self.archives.index(tree_id)].append((element.get('code'), "condition", tree_id))
 
         elif self.node_retry_until_successful == element.tag:
+            self.attempts_value_max = max(self.attempts_value_max, int(element.get('num_attempts')))
             self.tree.append([self.node_number, self.node_retry_until_successful, self.attempts_blocks, #attempts
                               element.get('num_attempts'), self.check_decorator_retry_depth(element), 
                               "BTREE_DEFINITION_TREE_UNRELATED", node_parent_number, is_reactive])
@@ -152,6 +154,7 @@ class BTREE_ARRAY:
                 self.attempts_max = self.attempts
 
         elif self.node_decorator_repeat == element.tag:
+            self.attempts_value_max = max(self.attempts_value_max, int(element.get('num_cycles')))
             self.tree.append([self.node_number, self.node_decorator_repeat, self.attempts_blocks, #attempts
                               element.get('num_cycles'), self.check_decorator_retry_depth(element), 
                               "BTREE_DEFINITION_TREE_UNRELATED", node_parent_number, is_reactive])
@@ -259,6 +262,7 @@ class BTREE_ARRAY:
         self.main_tree = main_tree if main_tree != None else input("Put your main tree:")
         self.load_archive()
         #For reactivity, use self.attempts_blocks, if not, use self.attempts_max.
+        self.library.attempts_value_max = self.attempts_value_max
         self.library.generate_archives(self.archives, self.texts, self.functions, self.attempts_blocks, self.tree_remodeled_size, output)
         # Keep the source tree next to the generated array: <output>/tools/btree_<project>/<archive>.xml
         tools = os.path.join(self.library.output, "tools", f"btree_{self.library.project[:-1].lower()}")

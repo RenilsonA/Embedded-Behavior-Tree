@@ -49,3 +49,9 @@ codeStyles
 .clang-format
 /cmake-build-debug
 examples/c99/delivery
+
+# Test builds
+tests/.build/
+tests/fuzz_failures/
+tests/esp32/.pio/
+tests/
