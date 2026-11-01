@@ -1,7 +1,6 @@
 import os
 import re
 import math
-import difflib
 from datetime import date
 
 NODE_UNRELATED = "BTREE_DEFINITION_TREE_UNRELATED"
@@ -74,8 +73,9 @@ class ARCHIVE_CREATOR:
 
     def create_declaration_commented(self, archive, functions):
         for function in functions:
-            if function[0] not in self.func_commented:
-                self.func_commented.append(function[0])
+            name = f"{self.prefix.lower()}btree_{self.project.lower()}{archive.lower()}_{function[0]}"
+            if name not in self.func_commented:
+                self.func_commented.append(name)
                 self.text += '/**\n'
                 self.text += '* @brief \n'
                 self.text += '*\n'
@@ -84,13 +84,14 @@ class ARCHIVE_CREATOR:
                 if function[1] == "action":
                     self.text += '* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;\n'
                 self.text += '*/\n'
-                self.text += f"btree_definition_status_t {self.prefix}btree_{self.project.lower()}{function[0]}(void);\n\n"
+                self.text += f"btree_definition_status_t {name}(void);\n\n"
 
     def create_declaration_empty(self, archive, functions):
         for function in functions:
-            if function[0] not in self.func_empty:
-                self.func_empty.append(function[0])
-                self.text += f"btree_definition_status_t {self.prefix}btree_{self.project.lower()}{function[0]}(void)\n"
+            name = f"{self.prefix.lower()}btree_{self.project.lower()}{archive.lower()}_{function[0]}"
+            if name not in self.func_empty:
+                self.func_empty.append(name)
+                self.text += f"btree_definition_status_t {name}(void)\n"
                 self.text += "{\n"
                 self.text += "  return BTREE_DEFINITION_STATUS_SUCCESS;\n}\n\n"
 
@@ -108,13 +109,37 @@ class ARCHIVE_CREATOR:
             self.create_declaration_empty(archive, functions)
         self.archive_end(archive, src=True, editable=True)
 
+    @staticmethod
+    def merge_editable(existing, generated, header):
+        """Files you edit (leaf functions, blackboard) are never rewritten: the existing file is kept
+        as it is and only the functions that are new in the tree are appended (declarations go
+        before the closing #endif of a header)."""
+        if header:
+            pattern = r"(?ms)^/\*\*\n(?:(?!/\*\*).)*?\*/\nbtree_definition_status_t (\w+)\(void\);\n\n?"
+        else:
+            pattern = r"(?ms)^btree_definition_status_t (\w+)\(void\)\n\{.*?^\}\n\n?"
+        missing = [m.group(0) for m in re.finditer(pattern, generated)
+                   if not re.search(r"\b" + re.escape(m.group(1)) + r"\s*\(", existing)]
+        if not missing:
+            return existing
+        addition = "".join(block if block.endswith("\n\n") else block + "\n" for block in missing)
+        if header:
+            guard = existing.rfind("#endif")
+            if guard != -1:
+                return existing[:guard] + addition + existing[guard:]
+        if not existing.endswith("\n"):
+            existing += "\n"
+        if not existing.endswith("\n\n"):
+            existing += "\n"
+        return existing + addition.rstrip("\n") + "\n"
+
     def archive_end(self, archive, src = None, endif = None, editable = None):
         endif      = f"#endif /* {self.prefix.upper()}BTREE_{self.project.upper()}{archive.upper()}_H_ */" if src == None and endif == None else ""
         self.text += endif
         if editable == True:
             local = f'{self.output}/include/btree_{self.project[:-1].lower()}' if src == None else f'{self.output}/src/btree_{self.project[:-1].lower()}'
         else:
-            local = f'{self.output}/btrees/btree_{self.project[:-1].lower()}'
+            local = f'{self.output}/tools/btree_{self.project[:-1].lower()}'
         archive_name = f"btree_{self.project.lower()}{archive}"
         archive_name += ".h" if src == None else ".c"
         os.makedirs(local, exist_ok=True) 
@@ -122,20 +147,7 @@ class ARCHIVE_CREATOR:
         final_text = self.text
         if editable == True and os.path.exists(output_bht):
             with open(output_bht, 'r', encoding='utf-8') as file:
-                texto_existente = file.read()
-            diff = difflib.ndiff(
-                texto_existente.splitlines(keepends=True), 
-                self.text.splitlines(keepends=True)
-            )
-            linhas_merged = []
-            for linha in diff:
-                if linha.startswith('  '):
-                    linhas_merged.append(linha[2:])
-                elif linha.startswith('- '):
-                    linhas_merged.append(linha[2:])
-                elif linha.startswith('+ '):
-                    linhas_merged.append(linha[2:])
-            final_text = "".join(linhas_merged)
+                final_text = self.merge_editable(file.read(), self.text, header=(src == None))
         with open(output_bht, 'w', encoding='utf-8') as file:
             file.write(final_text)
         self.text = ""
@@ -301,8 +313,9 @@ class ARCHIVE_CREATOR:
         self.text += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}COMMON_STATUS_NODES_SIZE (btree_index_t) {math.ceil((tree_size / 16))}\n\n"
         self.text += "/**\n"
         self.text += f" * @brief Number of fields needed in the worst case scenario of tree {self.project[:-1].lower()} attempted fields.\n"
+        self.text += " * At least 1: ISO C does not allow zero-length arrays.\n"
         self.text += " *\n */\n"
-        self.text += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE {max_ramification_attempts}\n\n"
+        self.text += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE {max(1, max_ramification_attempts)}\n\n"
         self.text += "/**\n"
         self.text += f" * @brief Externalize array of tree {self.project[:-1].lower()} attemps.\n"
         self.text += " *\n */\n"

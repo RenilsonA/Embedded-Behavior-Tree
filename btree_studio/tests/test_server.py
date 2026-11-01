@@ -5,6 +5,7 @@ import tempfile
 import threading
 import time
 import unittest
+import urllib.parse
 import urllib.request
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -119,6 +120,66 @@ class ServerTest(unittest.TestCase):
         array = next(out.rglob("btree_demo_array.c")).read_text()
         self.assertIn("BTREE_DEFINITION_CREATE_NODE_CONDITION", array)
         self.assertIn("BTREE_DEFINITION_CREATE_NODE_ACTION_SLEEP", array)
+
+    def test_generate_layout_header_and_prefix(self):
+        out = Path(self.tmp.name) / "gen2"
+        req = {"project": "demo", "mainTree": "main", "xml": XML, "output": str(out), "author": "Ana",
+               "email": "ana@x.com", "version": "3.2", "copyright": "ACME", "prefix": "acme"}
+        dry = self.call("/api/generate", {**req, "dryRun": True})
+        self.assertTrue(dry["ok"], dry)
+        self.assertFalse(out.exists(), "dry run must not write anything")
+        paths = sorted(f["path"] for f in dry["files"])
+        self.assertEqual(paths, sorted([
+            "tools/btree_demo/btree_demo_array.c", "tools/btree_demo/btree_demo_array.h",
+            "tools/btree_demo/btree_demo_common.c", "tools/btree_demo/btree_demo_common.h", "tools/btree_demo/demo.xml",
+            "include/btree_demo/btree_demo_blackboard.h", "include/btree_demo/btree_demo_main.h",
+            "src/btree_demo/btree_demo_blackboard.c", "src/btree_demo/btree_demo_main.c"]))
+        self.assertTrue(all(not f["exists"] for f in dry["files"]))
+        res = self.call("/api/generate", req)
+        self.assertTrue(res["ok"], res)
+        src = (out / "src/btree_demo/btree_demo_main.c").read_text()
+        self.assertIn("@author Ana (ana@x.com)", src)
+        self.assertIn("@version 3.2", src)
+        self.assertIn("ACME", src)
+        self.assertIn("acme_btree_demo_main_go(void)", src)
+        self.assertIn("&acme_btree_demo_main_go", (out / "tools/btree_demo/btree_demo_array.c").read_text())
+        self.assertIn('code="go"', (out / "tools/btree_demo/demo.xml").read_text())
+        again = self.call("/api/generate", {**req, "dryRun": True})
+        self.assertTrue(all(f["exists"] for f in again["files"]))
+
+    def test_regenerate_keeps_user_code(self):
+        out = Path(self.tmp.name) / "gen3"
+        req = {"project": "demo", "mainTree": "main", "xml": XML, "output": str(out)}
+        self.assertTrue(self.call("/api/generate", req)["ok"])
+        src = out / "src/btree_demo/btree_demo_main.c"
+        text = src.read_text().replace("btree_demo_main_go(void)\n{\n  return BTREE_DEFINITION_STATUS_SUCCESS;",
+                                       "btree_demo_main_go(void)\n{\n  motor_on(); /* mine */\n  return BTREE_DEFINITION_STATUS_STAND_BY;")
+        src.write_text(text)
+        more = XML.replace('<Script code="go"/>', '<Script code="go"/>\n      <Script code="stop"/>')
+        self.assertTrue(self.call("/api/generate", {**req, "xml": more})["ok"])
+        after = src.read_text()
+        self.assertTrue(after.startswith(text), "the user file must be kept as it was")
+        self.assertIn("btree_demo_main_stop(void)", after[len(text):])
+        self.assertEqual(after.count("motor_on();"), 1)
+        self.assertIn("btree_demo_main_stop(void);", (out / "include/btree_demo/btree_demo_main.h").read_text())
+        self.assertIn("&btree_demo_main_stop", (out / "tools/btree_demo/btree_demo_array.c").read_text())
+        self.assertTrue(self.call("/api/generate", {**req, "xml": more})["ok"])
+        self.assertEqual(src.read_text(), after, "generating twice must not change anything")
+
+    def test_generate_rejects_bad_names(self):
+        for bad in ({"project": "9demo"}, {"project": "demo", "prefix": "a-b"}):
+            res = self.call("/api/generate", {"mainTree": "main", "xml": XML, "output": self.tmp.name, **bad})
+            self.assertFalse(res["ok"])
+
+    def test_folder_browser(self):
+        base = Path(self.tmp.name) / "browse"
+        (base / "alpha").mkdir(parents=True)
+        (base / ".hidden").mkdir()
+        res = self.call("/api/fs/dirs?path=" + urllib.parse.quote(str(base)))
+        self.assertEqual(res["dirs"], ["alpha"])
+        self.assertEqual(res["parent"], str(base.parent))
+        made = self.call("/api/fs/mkdir", {"path": str(base / "novo")})
+        self.assertTrue(made["ok"] and (base / "novo").is_dir())
 
 
 if __name__ == "__main__":

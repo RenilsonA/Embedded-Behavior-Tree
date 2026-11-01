@@ -13,7 +13,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 SCRIPTS = REPO / "Scripts"
-EXAMPLES = [REPO / "btree_studio" / "examples" / "bc680z.xml", SCRIPTS / "tree-examples" / "simple.xml"]
+EXAMPLES = [REPO / "btree_studio" / "examples" / "bc680z.xml",
+            REPO / "examples" / "c99" / "tools" / "btree_robot" / "delivery.xml"] + \
+           sorted((SCRIPTS / "tree-examples").glob("*.xml"))
 MACRO = {
     "CONDITION": "condition", "ACTION": "action", "ACTION_SLEEP": "sleep",
     "RETRY_UNTIL_SUCCESS": "retry", "REPEAT": "repeat", "KEEP_RUNNING_UNTIL_FAILURE": "keep_running",
@@ -33,9 +35,10 @@ def python_order(xml, tree):
     for m in LINE_RE.finditer(text):
         kind = MACRO[m.group(2)]
         args = [a.strip() for a in m.group(3).split(",")]
-        rows.append((int(m.group(1)), kind, args[-1]))
+        target = lambda a: -1 if a == "BTREE_DEFINITION_TREE_UNRELATED" else int(a)
+        rows.append((int(m.group(1)), kind, args[-1], target(args[0]), target(args[1])))
     rows.sort()
-    return [(k, last) for _, k, last in rows]
+    return [(k, last, st, ft) for _, k, last, st, ft in rows]
 
 
 def studio_order(xml, tree):
@@ -52,8 +55,8 @@ def main():
             py = python_order(xml, tree)
             js = studio_order(xml, tree)
             ok = len(py) == len(js)
-            for (pk, plast), (jk, jval) in zip(py, js):
-                if pk != jk:
+            for (pk, plast, pst, pft), (jk, jval, jst, jft) in zip(py, js):
+                if pk != jk or (pst, pft) != (jst, jft):
                     ok = False
                 elif pk in ("action", "condition") and not plast.endswith("_" + jval):
                     ok = False
@@ -65,7 +68,7 @@ def main():
                 failures += 1
                 print("   python:", py)
                 print("   studio:", js)
-    print(f"\n{total - failures}/{total} árvores com ordem idêntica ao compilador.")
+    print(f"\n{total - failures}/{total} árvores com ordem e saltos (st/ft) idênticos ao compilador.")
     sys.exit(1 if failures else 0)
 
 

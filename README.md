@@ -49,14 +49,29 @@ The paper models behavior trees as *decision structures*, graphs where each acti
 btree-lib/btree/        the engine: include/ + src/ (definition, process, manager, common)
 Scripts/                XML → C generator (runs on your PC) + tree-examples/ (Groot2 .btproj/.xml)
 btree_studio/           BTree Studio: visual editor + live debugger (made with AI)
-examples/ble-wifi/      ESP-IDF (ESP32) project using a generated tree
+examples/               projects using btree-lib in place (no copy): c99 (PC), ESP-IDF, Silicon Labs
 BehaviorTree.CPP/       the same trees in BehaviorTree.CPP, used to validate execution order
 docs/images/            thesis figures
 ```
 
 ## Core library (`btree-lib`)
 
-**Portable C, one platform hook.** The only thing you implement is the delay used by `Sleep` nodes: `btree_common_action_timeout()` in [`btree_common.c`](btree-lib/btree/src/btree_common.c). It already splits `timeout_ms` into h/min/s/ms; add your RTOS/HAL delay at the `// Input here delay funcion` line.
+**Portable C, two platform functions.** The library never needs to be edited. [`btree_common.h`](btree-lib/btree/include/btree_common.h) declares two functions that the library calls and your firmware implements, anywhere in your project (plain ISO C: no weak symbols or function pointers, so it works with any compiler). If one is missing, the build fails with an `undefined reference` instead of misbehaving at run time:
+
+```c
+/* Always required. Sleep nodes: your RTOS/HAL delay. Return 0 = SUCCESS, anything else = FAIL. */
+int btree_common_delay_ms(uint32_t timeout_ms) {
+  vTaskDelay(pdMS_TO_TICKS(timeout_ms));
+  return 0;
+}
+
+/* Only required with BTREE_COMMON_DEBUG == 1: receives each ready [BTREE] line. */
+void btree_common_debug_output(const char *line) {
+  printf("%s", line);
+}
+```
+
+The debug line itself is built by the library (`btree_common_debug_print()`), so its format is always the one BTree Studio reads; lines longer than `BTREE_COMMON_DEBUG_LINE_SIZE` (160) are truncated. Define `BTREE_COMMON_DEBUG` wherever suits your project (compiler flag or a header included before the library).
 
 **Node types.** Every type has a `REACTIVE_*` twin (re-evaluated on each tick, see [Reactive vs non-reactive](#reactive-vs-non-reactive-execution)) and a `BTREE_DEFINITION_CREATE_NODE_*` macro, which the generator emits for you. Sequences and fallbacks are not node types: they are compiled away into the `st`/`ft` edges.
 
@@ -64,7 +79,7 @@ docs/images/            thesis figures
 
 - **`CONDITION`**: calls a user function that checks something and returns `SUCCESS` or `FAIL`.
 - **`ACTION`**: calls a user function that does something. Besides `SUCCESS`/`FAIL` it may return `RUNNING` or `STAND_BY`; the tree then pauses on this node and calls it again on the next tick.
-- **`ACTION_SLEEP`**: waits `timeout_ms` milliseconds through the platform delay hook in `btree_common_action_timeout()`, then succeeds.
+- **`ACTION_SLEEP`**: waits `timeout_ms` milliseconds through the platform hook `btree_common_delay_ms()`: `SUCCESS` if it returns 0, `FAIL` otherwise.
 
 *Decorators* (one child branch, change how it runs or what it returns):
 
@@ -110,25 +125,28 @@ python3 Scripts/btree_init.py
 
 The stages are `btree_array_creator.py` (XML → intermediate k-ary array), then `bree_execute.py` (flattening into `st`/`ft` edges), then `btree_creator.py` (writes the `.c`/`.h` files).
 
-**Output** (for `project = "main"`):
+**Output** (for `project = "main"`), organized in three folders, each with a `btree_<project>/` subfolder:
 
 | Files | Content | Edit? |
 |---|---|---|
-| `build/btree_main/btree_main_array.c/h` | the flattened graph + control block `btree_main_control` | no |
-| `build/btree_main/btree_main_common.c/h` | RAM buffers (2-bit states, decorator counters), sized for the tree | no |
-| `include/`, `src/btree_main/btree_main_<tree>.c/h` | one pair per `<BehaviorTree>`, with a stub (returns `SUCCESS`) for every `code` | **yes: your logic** |
-| `btree_main_blackboard.c/h` | shared data with `get/set_value`, `get/set_buffer`, `reset` stubs, so nodes exchange data without coupling | **yes** |
+| `tools/btree_main/btree_main_array.c/h` | the flattened graph + control block `btree_main_control` | no |
+| `tools/btree_main/btree_main_common.c/h` | RAM buffers (2-bit states, decorator counters), sized for the tree | no |
+| `tools/btree_main/<file>.xml` | a copy of the tree the code was generated from | no |
+| `include/btree_main/`, `src/btree_main/btree_main_<tree>.h/c` | one pair per `<BehaviorTree>`, with a stub (returns `SUCCESS`) for every `code` | **yes: your logic** |
+| `include/btree_main/`, `src/btree_main/btree_main_blackboard.h/c` | the data shared by the nodes (a struct you fill) | **yes** |
+
+Generating again into the same folder rewrites `tools/` but never your files in `include/` and `src/`: only the functions of new leaves are appended. Header data (author, e-mail, version, copyright) and an optional symbol prefix are set in `set_archive_data(...)`, or in the BTree Studio generation dialog.
 
 A real generated example is in [`examples/ble-wifi/main/build/btree_main/`](examples/ble-wifi/main/build/btree_main/).
 
 ## Integrating into your firmware
 
-1. Copy `btree-lib/btree/{include,src}` and the generated `include/`, `src/`, `build/` into your project (as in `examples/ble-wifi/main/bt/`).
-2. Implement `btree_common_action_timeout()` and the leaf stubs in `btree_<project>_<tree>.c`.
+1. Add `btree-lib/btree/src/*.c` and `btree-lib/btree/include` to your build (the examples use the folder in place, no copy: see [`examples/ble-wifi/main/CMakeLists.txt`](examples/ble-wifi/main/CMakeLists.txt)), plus the generated `tools/`, `include/` and `src/` folders (older examples name `tools/` as `build/`).
+2. Define `btree_common_delay_ms()` (and `btree_common_debug_output()` if you use debug) and implement the leaf stubs in `btree_<project>_<tree>.c`.
 3. From your main loop or an RTOS task, call `btree_manager_tick_tree(&btree_<project>_control)` (or the reactive variant) at the cadence your application needs.
    Or use `btree_manager_tick()` with your own callbacks: typically `success_case`/`fail_case` call `btree_manager_reset_tree()`, and `standby_case` schedules the next tick once whatever the tree is waiting on resolves.
 
-> The `ble-wifi` example ships the generated code and the vendored library, but no application `main.c`. The steps above follow the public API.
+> The smallest complete program is [`examples/c99`](examples/c99): plain C99, runs on a PC with `make run`.
 
 ## Reactive vs. non-reactive execution
 
@@ -150,13 +168,15 @@ cd btree_studio && python3 studio.py      # http://localhost:8765
 - **Edit:** projects with a main tree and subtrees, drag & drop, Groot2-style linking, undo/redo. Only engine-supported nodes are offered, and everything the generator would reject is flagged.
 - **Work fast:** `Ctrl+K` command palette; `Space`/double-click to add a node by typing (`action open_door`, `sleep 500`); contextual hints; animated layout and minimap.
 - **Generate:** saves Groot2-compatible XML/`.btproj` and runs the pipeline to produce the C code.
-- **Debug live:** colors the tree from `[BTREE] | Tree: %s | Node: %d | Status: %s | Type: %s | Function: %s` lines. Enable `BTREE_COMMON_DEBUG` and implement `btree_common_debug_print()`. A simulator and log replay are included.
+- **Debug live:** colors the tree from `[BTREE] | Tree: %s | Node: %d | Status: %s | Type: %s | Function: %s` lines. Enable `BTREE_COMMON_DEBUG` and define `btree_common_debug_output()`. A simulator and log replay are included.
 - **Go back in time:** every event lands on a timeline. Scrub it (or click a log line) to see the tree as it was, step event by event, or jump to the previous/next failure.
 
 Full guide (Portuguese): [`btree_studio/README.md`](btree_studio/README.md).
 
 ## Examples and validation
 
+- **[`examples/c99`](examples/c99)** (any PC, plain C99): a simulated delivery robot with Condition, Action in `STAND_BY`, Retry, Sleep and Inverter. `make run` shows the tree working and prints the `[BTREE]` log.
+- **[`examples/btree-msgs`](examples/btree-msgs)** (ESP32, ESP-IDF), **[`examples/btree-example-subtree`](examples/btree-example-subtree)** and **[`examples/btree-long-tree`](examples/btree-long-tree)** (Silicon Labs EFR32, Simplicity Studio): message dispatch, subtrees and a long tree. All examples use `btree-lib/` directly and implement the two platform functions in their own `btree_port.c`.
 - **[`examples/ble-wifi`](examples/ble-wifi)** (ESP32, ESP-IDF, non-reactive): turns on BLE, receives the Wi-Fi SSID/password through two characteristics, tears down BLE, connects and pings periodically to detect disconnects. The exported tree and real execution logs are in `Tree/`.
 - **[`Scripts/tree-examples`](Scripts/tree-examples)**: generator inputs. They include a small reactive tree (`simple.xml`), message-dispatch trees (`msgs.xml`, `msgs_ble.xml`), the ESP32 tree and a decorator-heavy tree.
 - **[`BehaviorTree.CPP/`](BehaviorTree.CPP)**: three of these trees reimplemented in BehaviorTree.CPP and run tick by tick side by side, with the logs in each `logs_img/`. `example1` (reactive tree) checks the order of fallbacks and sequences. `example2` (16-branch dispatch) stresses re-evaluation counts. `example3` exercises every decorator. **Result:** BehaviorTree.CPP needed **31 control-node evaluations** to reach the final state that the Minimum Behavior Graph reaches with **zero**.

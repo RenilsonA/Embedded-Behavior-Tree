@@ -1,0 +1,39 @@
+=== delivery 1 ===
+[BTREE] | Tree: ROBOT | Node: 0 | Status: Fail | Type: Condition | Function: btree_robot_delivery_battery_ok
+[BTREE] | Tree: ROBOT | Node: 1 | Status: Stand by | Type: Action | Function: btree_robot_delivery_charge
+[BTREE] | Tree: ROBOT | Node: 1 | Status: Stand by | Type: Action | Function: btree_robot_delivery_charge
+[BTREE] | Tree: ROBOT | Node: 1 | Status: Stand by | Type: Action | Function: btree_robot_delivery_charge
+[BTREE] | Tree: ROBOT | Node: 1 | Status: Success | Type: Action | Function: btree_robot_delivery_charge
+[BTREE] | Tree: ROBOT | Node: 2 | Status: Running | Type: Retry Until Success
+[BTREE] | Tree: ROBOT | Node: 3 | Status: Fail | Type: Action | Function: btree_robot_delivery_open_door
+[BTREE] | Tree: ROBOT | Node: 2 | Status: Running | Type: Retry Until Success
+[BTREE] | Tree: ROBOT | Node: 3 | Status: Success | Type: Action | Function: btree_robot_delivery_open_door
+[BTREE] | Tree: ROBOT | Node: 2 | Status: Success | Type: Retry Until Success
+[BTREE] | Tree: ROBOT | Node: 4 | Status: Success | Type: Action Sleep
+[BTREE] | Tree: ROBOT | Node: 5 | Status: Running | Type: Inverter
+[BTREE] | Tree: ROBOT | Node: 6 | Status: Fail | Type: Condition | Function: btree_robot_delivery_obstacle_detected
+[BTREE] | Tree: ROBOT | Node: 5 | Status: Success | Type: Inverter
+[BTREE] | Tree: ROBOT | Node: 7 | Status: Success | Type: Action | Function: btree_robot_delivery_deliver_package
+=== delivery 2 ===
+[BTREE] | Tree: ROBOT | Node: 0 | Status: Success | Type: Condition | Function: btree_robot_delivery_battery_ok
+[BTREE] | Tree: ROBOT | Node: 2 | Status: Running | Type: Retry Until Success
+[BTREE] | Tree: ROBOT | Node: 3 | Status: Fail | Type: Action | Function: btree_robot_delivery_open_door
+[BTREE] | Tree: ROBOT | Node: 2 | Status: Running | Type: Retry Until Success
+[BTREE] | Tree: ROBOT | Node: 3 | Status: Success | Type: Action | Function: btree_robot_delivery_open_door
+[BTREE] | Tree: ROBOT | Node: 2 | Status: Success | Type: Retry Until Success
+[BTREE] | Tree: ROBOT | Node: 4 | Status: Success | Type: Action Sleep
+[BTREE] | Tree: ROBOT | Node: 5 | Status: Running | Type: Inverter
+[BTREE] | Tree: ROBOT | Node: 6 | Status: Fail | Type: Condition | Function: btree_robot_delivery_obstacle_detected
+[BTREE] | Tree: ROBOT | Node: 5 | Status: Success | Type: Inverter
+[BTREE] | Tree: ROBOT | Node: 7 | Status: Success | Type: Action | Function: btree_robot_delivery_deliver_package
+=== delivery 3 ===
+[BTREE] | Tree: ROBOT | Node: 0 | Status: Success | Type: Condition | Function: btree_robot_delivery_battery_ok
+[BTREE] | Tree: ROBOT | Node: 2 | Status: Running | Type: Retry Until Success
+[BTREE] | Tree: ROBOT | Node: 3 | Status: Fail | Type: Action | Function: btree_robot_delivery_open_door
+[BTREE] | Tree: ROBOT | Node: 2 | Status: Running | Type: Retry Until Success
+[BTREE] | Tree: ROBOT | Node: 3 | Status: Success | Type: Action | Function: btree_robot_delivery_open_door
+[BTREE] | Tree: ROBOT | Node: 2 | Status: Success | Type: Retry Until Success
+[BTREE] | Tree: ROBOT | Node: 4 | Status: Success | Type: Action Sleep
+[BTREE] | Tree: ROBOT | Node: 5 | Status: Running | Type: Inverter
+[BTREE] | Tree: ROBOT | Node: 6 | Status: Success | Type: Condition | Function: btree_robot_delivery_obstacle_detected
+[BTREE] | Tree: ROBOT | Node: 5 | Status: Fail | Type: Inverter

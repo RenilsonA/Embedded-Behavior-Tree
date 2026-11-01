@@ -28,30 +28,9 @@
 
 #include "btree_common.h"
 
-btree_definition_status_t btree_common_action_timeout(uint32_t timeout_ms) {
-  uint8_t hours = 0;
-  uint8_t minutes = 0;
-  uint8_t seconds = 0;
-  uint32_t milliseconds = timeout_ms;
-
-  hours = timeout_ms /
-          (BTREE_COMMON_MILLISECONDS_DIVISOR * BTREE_COMMON_SECONDS_DIVISOR *
-           BTREE_COMMON_MINUTES_DIVISOR);
-  milliseconds %= (BTREE_COMMON_MILLISECONDS_DIVISOR *
-                   BTREE_COMMON_SECONDS_DIVISOR * BTREE_COMMON_MINUTES_DIVISOR);
-
-  minutes = milliseconds /
-            (BTREE_COMMON_MILLISECONDS_DIVISOR * BTREE_COMMON_SECONDS_DIVISOR);
-  milliseconds %=
-      (BTREE_COMMON_MILLISECONDS_DIVISOR * BTREE_COMMON_SECONDS_DIVISOR);
-
-  seconds = milliseconds / (BTREE_COMMON_MILLISECONDS_DIVISOR);
-  milliseconds %= (BTREE_COMMON_MILLISECONDS_DIVISOR);
-
-  // Input here delay funcion
-
-  return BTREE_DEFINITION_STATUS_SUCCESS;
-}
+#if BTREE_COMMON_DEBUG == 1
+#include <stdio.h>
+#endif
 
 #if BTREE_COMMON_DEBUG == 1
 
@@ -59,13 +38,13 @@ btree_definition_status_t btree_common_action_timeout(uint32_t timeout_ms) {
  * @brief Array of status to debug.
  * 
  */
-static const char *btree_common_array_status_debug[] = {
-  "Running",
-  "Success",
-  "Re-execute",
-  "Fail",
-  "Stand by",
-  "Error",
+static const char *btree_common_array_status_debug[__BTREE_DEFINITION_STATUS_AMOUNT] = {
+  [BTREE_DEFINITION_STATUS_RUNNING] = "Running",
+  [BTREE_DEFINITION_STATUS_SUCCESS] = "Success",
+  [BTREE_DEFINITION_STATUS_FAIL] = "Fail",
+  [BTREE_DEFINITION_STATUS_RE_EXECUTE] = "Re-execute",
+  [BTREE_DEFINITION_STATUS_STAND_BY] = "Stand by",
+  [BTREE_DEFINITION_STATUS_ERROR] = "Error",
 };
 
 /**
@@ -102,21 +81,33 @@ static const char *btree_common_node_type_string(btree_definition_node_type_t no
 void btree_common_debug_print(btree_index_t index,
                               btree_definition_status_t status, 
                               btree_definition_node_type_t node_type, 
-                              const char *tree_name, const char **functions_name) {
-  const char *node_string = btree_common_node_type_string(node_type);
-  const char *status_string = btree_common_array_status_debug[status];
-  const char *tree_str = tree_name ? tree_name : "Unknown";
-  /* Input here your debug print function. 
-     Format: [BTREE] | Tree: %s | Node: %d | Status: %s | Type: %s | Function: %s\n
-     Example: */
-  /*
-  printf("[BTREE] | Tree: %s | Node: %d | Status: %s | Type: %s", 
-          tree_str, index, status_string ? status_string : "Unknown",
-          node_string ? node_string : "Unknown");
-  if (functions_name && functions_name[index] && functions_name[index][0] != '\0') {
-    printf(" | Function: %s", functions_name[index]); 
+                              const char *tree_name, const char *const *functions_name) {
+  char line[BTREE_COMMON_DEBUG_LINE_SIZE];
+  const char *status_string = "Unknown";
+  const char *function_name = NULL;
+  int length = 0;
+
+  if ((unsigned)status < (unsigned)__BTREE_DEFINITION_STATUS_AMOUNT) {
+    status_string = btree_common_array_status_debug[status];
   }
-  printf("\n");
-  */
+
+  if ((functions_name) && (functions_name[index]) && (functions_name[index][0] != '\0')) {
+    function_name = functions_name[index];
+  }
+
+  length = snprintf(line, sizeof(line),
+                    "[BTREE] | Tree: %s | Node: %d | Status: %s | Type: %s%s%s\n",
+                    tree_name ? tree_name : "Unknown", (int)index, status_string,
+                    btree_common_node_type_string(node_type),
+                    function_name ? " | Function: " : "",
+                    function_name ? function_name : "");
+  if (length < 0) {
+    return;
+  }
+  if ((size_t)length >= sizeof(line)) {
+    line[sizeof(line) - 2] = '\n';
+  }
+
+  btree_common_debug_output(line);
 }
 #endif

@@ -306,36 +306,145 @@
         buttons: [{ label: 'Ver problemas', kind: 'primary', value: true }] }).then(function (v) { if (v) showBottom('problems'); });
       return;
     }
-    var out = el('input', { class: 'input mono', value: p.meta.output || '', placeholder: S.backend.workspace + '/' + p.name + '/generated' });
-    var author = el('input', { class: 'input', value: p.meta.author || '' });
-    var email = el('input', { class: 'input', value: p.meta.email || '' });
-    var version = el('input', { class: 'input', value: p.meta.version || '1.0' });
-    var body = el('div', { class: 'form' }, [
-      el('p', { class: 'hint', html: 'Executa <code>Scripts/btree_array_creator.py</code> com a árvore principal <b>' + UI.esc(p.trees[p.mainTreeId].name) + '</b> e o projeto <b>' + UI.esc(p.name) + '</b>.' }),
-      el('label', { class: 'field' }, [el('span', { text: 'Pasta de saída' }), out]),
+    var IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
+    var input = function (id, value, cls, ph) { return el('input', { class: 'input ' + (cls || ''), id: id, value: value || '', placeholder: ph || '' }); };
+    var f = {
+      author: input('genAuthor', p.meta.author), email: input('genEmail', p.meta.email),
+      version: input('genVersion', p.meta.version || '1.0'), copyright: input('genCopyright', p.meta.copyright, '', 'ex.: Minha Empresa Ltda.'),
+      cproject: input('genProject', p.meta.cproject || p.name, 'mono'), prefix: input('genPrefix', p.meta.prefix, 'mono', 'opcional'),
+      output: input('genOutput', p.meta.output || (S.backend.workspace + '/' + p.name + '/generated'), 'mono')
+    };
+    var err = el('div', { class: 'field-error', id: 'genError' });
+    var preview = el('div', { class: 'gen-tree mono', id: 'genPreview' });
+    var browser = el('div', { class: 'gen-browser', id: 'genBrowser', hidden: true });
+    var field = function (label, node, hint) { return el('label', { class: 'field' }, [el('span', { text: label }), node].concat(hint ? [el('small', { class: 'hint', html: hint })] : [])); };
+
+    function values() {
+      return { author: f.author.value.trim(), email: f.email.value.trim(), version: f.version.value.trim(), copyright: f.copyright.value.trim(),
+        cproject: f.cproject.value.trim(), prefix: f.prefix.value.trim(), output: f.output.value.trim() };
+    }
+    function check(v) {
+      if (!IDENT.test(v.cproject)) return 'Projeto: use letras, números e _ (sem começar com número).';
+      if (v.prefix && !IDENT.test(v.prefix)) return 'Prefixo: use letras, números e _ (sem começar com número).';
+      if (!v.output) return 'Escolha a pasta de saída.';
+      return '';
+    }
+    function request(v, dry) {
+      return { project: v.cproject, mainTree: p.trees[p.mainTreeId].name, xml: M.exportXml(p), output: v.output,
+        author: v.author, email: v.email, version: v.version, copyright: v.copyright, prefix: v.prefix, dryRun: !!dry };
+    }
+
+    // File tree of what will be written: tools/ src/ include/ › btree_<projeto>/ › files
+    function renderTree(res) {
+      var root = {};
+      res.files.forEach(function (fl) {
+        var parts = fl.path.split('/'), node = root;
+        parts.forEach(function (part, i) { if (i === parts.length - 1) node[part] = fl; else node = node[part] = node[part] || {}; });
+      });
+      var order = { tools: 0, include: 1, src: 2 };
+      var note = { tools: 'gerado: array, common e o XML (sempre substituído)', include: 'seu código: declarações', src: 'seu código: implemente as funções aqui' };
+      function walk(node, depth, top) {
+        return Object.keys(node).sort(function (a, b) { return (order[a] === undefined ? 9 : order[a]) - (order[b] === undefined ? 9 : order[b]) || a.localeCompare(b); }).map(function (k) {
+          var v = node[k];
+          var pad = { style: 'padding-left:' + (depth * 16) + 'px' };
+          if (v && v.path) {
+            var editable = !/^tools\//.test(v.path);
+            var tag = !v.exists ? '<span class="gen-tag new">novo</span>' : editable ? '<span class="gen-tag keep">existe: mesclado, seu código é mantido</span>' : '<span class="gen-tag over">existe: substituído</span>';
+            return el('div', Object.assign({ class: 'gen-file', html: I.icon('code', 13) + UI.esc(k) + tag }, pad));
+          }
+          return el('div', { class: 'gen-dir' }, [el('div', Object.assign({ class: 'gen-dname', html: I.icon('folder-open', 13) + UI.esc(k) + '/' + (depth === 1 && note[k] ? '<span class="hint">' + note[k] + '</span>' : '') }, pad))]
+            .concat(walk(v, depth + 1)));
+        });
+      }
+      preview.innerHTML = '';
+      preview.appendChild(el('div', { class: 'gen-dname gen-root', html: I.icon('folder', 13) + UI.esc(res.output) + '/' }));
+      walk(root, 1).forEach(function (n) { preview.appendChild(n); });
+    }
+    var pending = 0;
+    function refresh() {
+      var v = values(), msg = check(v);
+      err.textContent = msg;
+      if (msg) { preview.innerHTML = ''; return; }
+      var my = ++pending;
+      preview.classList.add('loading');
+      Store.api('/api/generate', request(v, true)).then(function (res) {
+        if (my !== pending) return;
+        preview.classList.remove('loading');
+        renderTree(res);
+      }).catch(function (e) { if (my === pending) { preview.classList.remove('loading'); err.textContent = e.message; } });
+    }
+    var timer = null;
+    Object.keys(f).forEach(function (k) { f[k].addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(refresh, 300); }); });
+
+    // Folder picker (folders seen by the local server)
+    function browse(path) {
+      Store.api('/api/fs/dirs?path=' + encodeURIComponent(path || '')).then(function (res) {
+        browser.innerHTML = '';
+        var bar = el('div', { class: 'gen-bbar' }, [
+          el('button', { class: 'btn small', type: 'button', html: I.icon('arrow-left', 14) + 'Acima', disabled: !res.parent, onclick: function () { browse(res.parent); } }),
+          el('button', { class: 'btn small', type: 'button', text: 'Workspace', onclick: function () { browse(res.workspace); } }),
+          el('button', { class: 'btn small', type: 'button', text: 'Home', onclick: function () { browse(res.home); } }),
+          el('button', { class: 'btn small', type: 'button', html: I.icon('plus', 14) + 'Nova pasta', onclick: function () {
+            UI.prompt('Nova pasta', 'Nome da pasta dentro de ' + res.path, '').then(function (name) {
+              if (!name) return;
+              Store.api('/api/fs/mkdir', { path: res.path + '/' + name }).then(function (r) { browse(r.path); }).catch(function (e) { UI.toast(e.message, 'error'); });
+            });
+          } }),
+          el('button', { class: 'btn small primary', type: 'button', html: I.icon('check', 14) + 'Usar esta pasta', onclick: function () {
+            f.output.value = res.path; browser.hidden = true; refresh();
+          } })
+        ]);
+        browser.appendChild(bar);
+        browser.appendChild(el('div', { class: 'gen-bpath mono', text: res.path }));
+        var list = el('div', { class: 'gen-blist' });
+        if (!res.dirs.length) list.appendChild(el('div', { class: 'hint', text: '(sem subpastas)' }));
+        res.dirs.forEach(function (d) {
+          list.appendChild(el('button', { class: 'gen-bitem', type: 'button', html: I.icon('folder', 14) + UI.esc(d), onclick: function () { browse(res.path + '/' + d); } }));
+        });
+        browser.appendChild(list);
+        browser.hidden = false;
+      }).catch(function (e) { UI.toast(e.message, 'error'); });
+    }
+    var pick = el('button', { class: 'btn', type: 'button', id: 'genBrowse', html: I.icon('folder-open', 16) + 'Escolher…', onclick: function () { browser.hidden ? browse(f.output.value) : (browser.hidden = true); } });
+
+    var body = el('div', { class: 'form gen-form' }, [
+      el('p', { class: 'hint', html: 'Gera o C com <code>Scripts/</code> a partir da árvore principal <b>' + UI.esc(p.trees[p.mainTreeId].name) + '</b> (★).' }),
+      el('div', { class: 'gen-section', text: 'Cabeçalho dos arquivos' }),
+      el('div', { class: 'grid2' }, [field('Autor', f.author), field('E-mail', f.email)]),
+      el('div', { class: 'grid2' }, [field('Versão', f.version), field('Copyright', f.copyright)]),
+      el('div', { class: 'gen-section', text: 'Código' }),
       el('div', { class: 'grid2' }, [
-        el('label', { class: 'field' }, [el('span', { text: 'Autor' }), author]),
-        el('label', { class: 'field' }, [el('span', { text: 'E-mail' }), email])
+        field('Projeto', f.cproject, 'Nome em <code>btree_&lt;projeto&gt;_…</code>'),
+        field('Prefixo', f.prefix, 'Fica <code>&lt;prefixo&gt;_btree_…</code>')
       ]),
-      el('label', { class: 'field' }, [el('span', { text: 'Versão' }), version])
+      el('div', { class: 'gen-section', text: 'Destino' }),
+      el('div', { class: 'field' }, [el('span', { text: 'Pasta de saída' }), el('div', { class: 'gen-out' }, [f.output, pick])]),
+      browser,
+      err,
+      preview
     ]);
-    UI.modal({ title: 'Gerar código C — ' + p.name, body: body, width: '560px',
-      buttons: [{ label: 'Cancelar', value: null }, { label: 'Gerar', kind: 'primary', icon: 'code', value: true }] }).then(function (go) {
+    UI.modal({ title: 'Gerar código C — ' + p.name, body: body, width: '720px',
+      buttons: [{ label: 'Cancelar', value: null }, { label: 'Gerar', kind: 'primary', icon: 'code', value: true, action: function () {
+        var msg = check(values()); err.textContent = msg; return msg ? false : true;
+      } }] }).then(function (go) {
       if (!go) return;
-      p.meta.output = out.value.trim(); p.meta.author = author.value.trim(); p.meta.email = email.value.trim(); p.meta.version = version.value.trim();
+      var v = values();
+      p.meta.output = v.output; p.meta.author = v.author; p.meta.email = v.email; p.meta.version = v.version;
+      p.meta.copyright = v.copyright; p.meta.prefix = v.prefix; p.meta.cproject = v.cproject;
+      // The firmware logs "Tree: <PROJETO>": keep the Monitor matching it.
+      if (v.cproject.toUpperCase() !== M.logNameOf(p)) p.logName = v.cproject.toUpperCase();
       Store.persistNow();
       UI.toast('Gerando código…', 'info', 1500);
-      Store.api('/api/generate', {
-        project: p.name, mainTree: p.trees[p.mainTreeId].name, xml: M.exportXml(p),
-        output: p.meta.output, author: p.meta.author, email: p.meta.email, version: p.meta.version
-      }).then(function (res) {
-        UI.modal({ title: 'Código gerado', width: '620px',
-          body: '<p>Arquivos em <code>' + UI.esc(res.output) + '</code>:</p><ul class="files mono">' +
-            res.files.map(function (f) { return '<li>' + UI.esc(f) + '</li>'; }).join('') + '</ul>' +
-            '<p class="hint">Com <code>BTREE_COMMON_DEBUG == 1</code>, o firmware imprime <code>Tree: ' + UI.esc(M.logNameOf(p)) + '</code> — o Monitor reconhece automaticamente.</p>',
+      Store.api('/api/generate', request(v, false)).then(function (res) {
+        UI.modal({ title: 'Código gerado', width: '640px',
+          body: '<p>' + res.files.length + ' arquivos em <code>' + UI.esc(res.output) + '</code>:</p><ul class="files mono">' +
+            res.files.map(function (x) { return '<li>' + UI.esc(x) + '</li>'; }).join('') + '</ul>' +
+            '<p class="hint">Inclua <code>btree-lib</code>, <code>tools/</code>, <code>include/</code> e <code>src/</code> no build e implemente ' +
+            '<code>btree_common_delay_ms()</code>. Com <code>BTREE_COMMON_DEBUG == 1</code>, o firmware imprime <code>Tree: ' + UI.esc(M.logNameOf(p)) + '</code>, que o Monitor reconhece.</p>',
           buttons: [{ label: 'OK', kind: 'primary', value: true }] });
       }).catch(function (e) { UI.toast('Falha ao gerar: ' + e.message, 'error', 10000); });
     });
+    refresh();
   }
 
   function fileMenu(x, y) {

@@ -29,7 +29,7 @@ import webbrowser
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 try:
     import serial
@@ -369,13 +369,34 @@ class Bridge:
 BRIDGE = Bridge()
 
 
+def list_dirs(path):
+    """Folders inside `path` (for the output folder picker). Defaults to the workspace."""
+    base = Path(path).expanduser() if path else WORKSPACE.root
+    base = base.resolve()
+    while not base.is_dir() and base != base.parent:
+        base = base.parent
+    dirs = []
+    try:
+        for d in sorted(base.iterdir(), key=lambda x: x.name.lower()):
+            if d.is_dir() and not d.name.startswith("."):
+                dirs.append(d.name)
+    except PermissionError:
+        pass
+    return {"path": str(base), "parent": str(base.parent) if base.parent != base else None,
+            "home": str(Path.home()), "workspace": str(WORKSPACE.root), "dirs": dirs}
+
+
 def list_serial_ports():
     if not SERIAL_AVAILABLE:
         return []
-    ports = []
+    real, legacy = [], []
     for p in serial.tools.list_ports.comports():
-        ports.append({"device": p.device, "description": p.description or "", "hwid": p.hwid or ""})
-    return ports
+        entry = {"device": p.device, "description": p.description or "", "hwid": p.hwid or ""}
+        # Linux lists every legacy /dev/ttyS* with no hardware behind it ("n/a"): keep the real
+        # ports (USB adapters, boards) first and drop the empty ones when a real port exists.
+        (legacy if (p.hwid or "n/a") == "n/a" else real).append(entry)
+    real.sort(key=lambda e: e["device"])
+    return real or legacy
 
 
 # --------------------------------------------------------------------------- #
@@ -456,29 +477,44 @@ WORKSPACE = None
 GENERATOR_SNIPPET = r"""
 import sys
 from btree_array_creator import BTREE_ARRAY
-archive, output, main_tree, project, author, email, version = sys.argv[1:8]
+archive, output, main_tree, project, author, email, version, copyrights, prefix = sys.argv[1:10]
 x = BTREE_ARRAY()
-x.set_archive_data(author, email, version, "", project)
+x.set_archive_data(author, email, version, copyrights, project, prefix=prefix or None)
 x.create_trees(archive=archive, output=output, main_tree=main_tree)
 print("OK")
 """
 
 
+C_IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
 def generate_code(payload):
+    """Runs Scripts/ for one project. Layout of <output>:
+    src/btree_<p>/ and include/btree_<p>/ (your code: trees and blackboard),
+    tools/btree_<p>/ (array, common and the XML). With dryRun the files are generated in a
+    temporary folder only to list them, marking the ones that already exist in <output>."""
     if not (SCRIPTS_DIR / "btree_array_creator.py").is_file():
         raise RuntimeError(f"Gerador não encontrado em {SCRIPTS_DIR}.")
     project = payload["project"]
-    if not PROJECT_NAME_RE.match(project):
-        raise RuntimeError("Nome de projeto inválido para gerar código C.")
+    if not PROJECT_NAME_RE.match(project) or not C_IDENT_RE.match(project):
+        raise RuntimeError("Nome de projeto inválido para gerar código C (use letras, números e _).")
+    prefix = (payload.get("prefix") or "").strip()
+    if prefix and not C_IDENT_RE.match(prefix):
+        raise RuntimeError("Prefixo inválido: use letras, números e _ (sem começar com número).")
     output = payload.get("output") or str(WORKSPACE.root / project / "generated")
     output = str(Path(output).expanduser().resolve())
+    if payload.get("dryRun"):
+        with tempfile.TemporaryDirectory() as tmp:
+            res = generate_code({**payload, "dryRun": False, "output": tmp})
+        files = [{"path": f, "exists": os.path.exists(os.path.join(output, f))} for f in res["files"]]
+        return {"output": output, "files": files, "dryRun": True}
     python = sys.executable
     if FROZEN:  # inside the executable there is no interpreter: use the system Python
         python = shutil.which("python3") or shutil.which("python")
         if not python:
             raise RuntimeError("Python não encontrado no PATH (necessário para o gerador de código C).")
     with tempfile.TemporaryDirectory() as tmp:
-        xml_path = Path(tmp) / f"{project}.xml"
+        xml_path = Path(tmp) / f"{project}.xml"  # copied to tools/btree_<p>/<project>.xml
         xml_path.write_text(payload["xml"], encoding="utf-8")
         proc = subprocess.run(
             [
@@ -492,6 +528,8 @@ def generate_code(payload):
                 payload.get("author") or "BTree Studio",
                 payload.get("email") or "",
                 payload.get("version") or "1.0",
+                payload.get("copyright") or "",
+                prefix,
             ],
             cwd=str(SCRIPTS_DIR),
             capture_output=True,
@@ -559,6 +597,9 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json({"ok": True, "available": SERIAL_AVAILABLE, "ports": list_serial_ports()})
         if path == "/api/jlink/probes":
             return self._json({"ok": True, "available": JLINK_AVAILABLE, "probes": list_jlink_probes()})
+        if path == "/api/fs/dirs":
+            q = parse_qs(urlparse(self.path).query)
+            return self._json({"ok": True, **list_dirs((q.get("path") or [""])[0])})
         if path == "/api/workspace":
             return self._json({"ok": True, "root": str(WORKSPACE.root), "projects": WORKSPACE.list()})
         if path == "/api/events":
@@ -595,6 +636,10 @@ class Handler(SimpleHTTPRequestHandler):
             if path == "/api/project/rename":
                 WORKSPACE.rename(body["old"], body["new"])
                 return self._json({"ok": True})
+            if path == "/api/fs/mkdir":
+                target = Path(body["path"]).expanduser().resolve()
+                target.mkdir(parents=True, exist_ok=True)
+                return self._json({"ok": True, "path": str(target)})
             if path == "/api/generate":
                 return self._json({"ok": True, **generate_code(body)})
         except Exception as exc:

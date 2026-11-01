@@ -105,7 +105,18 @@ cycles…).
 - **Corner hints** show the shortcuts that apply right now (nothing selected, node selected, loose nodes, Monitor).
   The `×` hides them; `Ctrl+K` › *Mostrar dicas* ("show hints") brings them back.
 - **Arquivo › Exportar** (file › export): XML, `.btproj + .xml` (Groot2) or **Gerar código C** ("generate C code",
-  runs `btree_array_creator.py`).
+  runs `Scripts/`). The generation dialog has the same options as the Python script:
+  - file header: author, e-mail, version and copyright;
+  - code: the C project name (`btree_<project>_…`) and an optional symbol prefix (`<prefix>_btree_…`). If the C
+    project differs from the Studio project, the Monitor's log name follows it automatically;
+  - destination: the output folder, typed or picked with **Escolher…** (browse, create folders);
+  - a preview of every file that will be written, marking which ones are new, which already exist and are kept
+    (your code) and which are replaced.
+
+  The output folder gets three folders, each with a `btree_<project>/` subfolder: `tools/` (array, common and the
+  tree XML, always regenerated), `include/` and `src/` (your leaf functions and blackboard). Generating again into
+  the same folder never overwrites your code: only the functions of new leaves are appended. The settings are saved
+  with the project (`studio.json`).
 
 ## Debugging (Monitor mode)
 
@@ -158,8 +169,9 @@ another branch). Exceptions: re-evaluations of *Reactive* nodes and a decorator 
   properties.
 - Click a `[BTREE]` line in the terminal to locate the node and see the tree at that instant. Lines whose
   index/type do not match the tree are marked with ⚠ (XML differs from the firmware).
-- For the firmware to emit the log, build with `BTREE_COMMON_DEBUG == 1` and implement the `printf` in
-  `btree_common_debug_print()` (`btree-lib/btree/src/btree_common.c`).
+- For the firmware to emit the log, build with `BTREE_COMMON_DEBUG == 1` and define
+  `void btree_common_debug_output(const char *line)` in your firmware, sending `line` to the UART/RTT. The library builds
+  each line in the format above.
 
 ## Structure
 

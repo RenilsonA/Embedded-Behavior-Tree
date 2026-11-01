@@ -1070,5 +1070,10 @@
 			<type>1</type>
 			<locationURI>STUDIO_SDK_LOC/util/third_party/segger/systemview/SEGGER/SEGGER_RTT_printf.c</locationURI>
 		</link>
+		<link>
+			<name>bt</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/btree-lib/btree</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>

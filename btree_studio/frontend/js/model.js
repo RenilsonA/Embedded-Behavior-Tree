@@ -578,7 +578,56 @@
       if (e) e.end = order.length - 1;
     }
     visit(tree0, tree0.rootId, '', 0);
+    linkTargets(project, tree0, order);
     return order;
+  }
+
+  /* Next node after each compiled node, exactly as Scripts/ flattens the tree: e.st on SUCCESS,
+   * e.ft on FAIL, -1 (BTREE_DEFINITION_TREE_UNRELATED) when the whole tree ends there.
+   * A decorator's child always returns to the decorator. */
+  function linkTargets(project, tree0, order) {
+    var at = {};
+    order.forEach(function (e, i) { at[e.ctx + '|' + e.nodeId] = i; });
+    function first(tree, nodeId, ctx, depth) {
+      var n = tree.nodes[nodeId];
+      if (!n || depth > 64) return null;
+      if (n.type === 'subtree') {
+        var ref = project.trees[n.props.ref];
+        return ref ? first(ref, ref.rootId, ctx + '/' + n.id, depth + 1) : null;
+      }
+      if (isCompiled(n.type)) return at[ctx + '|' + n.id];
+      for (var i = 0; i < n.children.length; i++) {
+        var f = first(tree, n.children[i], ctx, depth + 1);
+        if (f !== null && f !== undefined) return f;
+      }
+      return null;
+    }
+    function link(tree, nodeId, ctx, onS, onF, depth) {
+      var n = tree.nodes[nodeId];
+      if (!n || depth > 64) return;
+      if (n.type === 'subtree') {
+        var ref = project.trees[n.props.ref];
+        if (ref) link(ref, ref.rootId, ctx + '/' + n.id, onS, onF, depth + 1);
+        return;
+      }
+      if (isCompiled(n.type)) {
+        var idx = at[ctx + '|' + n.id];
+        order[idx].st = onS;
+        order[idx].ft = onF;
+        if (n.children.length) link(tree, n.children[0], ctx, idx, idx, depth + 1);
+        return;
+      }
+      var isFallback = n.type === 'fallback' || n.type === 'reactive_fallback';
+      for (var i = 0; i < n.children.length; i++) {
+        var next = null;
+        for (var j = i + 1; j < n.children.length && (next === null || next === undefined); j++) next = first(tree, n.children[j], ctx, depth + 1);
+        var hasNext = next !== null && next !== undefined;
+        if (n.type === 'root') link(tree, n.children[i], ctx, onS, onF, depth + 1);
+        else if (isFallback) link(tree, n.children[i], ctx, onS, hasNext ? next : onF, depth + 1);
+        else link(tree, n.children[i], ctx, hasNext ? next : onS, onF, depth + 1);
+      }
+    }
+    link(tree0, tree0.rootId, '', -1, -1, 0);
   }
 
   /* ------------------------------------------------------------------ *

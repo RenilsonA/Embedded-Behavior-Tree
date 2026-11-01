@@ -7,6 +7,6 @@ imp.mainTreeName = mainTree;
 const p = M.projectFromImport(imp, 'x');
 const out = M.compiledOrder(p).map(e => {
   const n = p.trees[e.treeId].nodes[e.nodeId];
-  return [n.type, n.props.code || n.props.msec || n.props.num || ''];
+  return [n.type, n.props.code || n.props.msec || n.props.num || '', e.st, e.ft];
 });
 console.log(JSON.stringify(out));

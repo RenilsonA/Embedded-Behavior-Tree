@@ -13,7 +13,7 @@
   var counters = { lines: 0, events: 0, unmatched: 0, mismatches: 0, unknownTree: {} };
   var lastRunning = null;
 
-  function newPState() { return { inst: {}, latest: {}, stats: {}, lastIndex: -1 }; }
+  function newPState() { return { inst: {}, latest: {}, stats: {}, lastIndex: -1, finished: false }; }
   function pstate(pid) {
     var box = viewStates || states;
     return box[pid] || (box[pid] = newPState());
@@ -36,6 +36,7 @@
     Object.keys(st.latest).forEach(function (k) { out.latest[k] = cp(st.latest[k]); });
     Object.keys(st.stats).forEach(function (k) { out.stats[k] = Object.assign({}, st.stats[k]); });
     out.lastIndex = st.lastIndex;
+    out.finished = st.finished;
     return out;
   }
   function cloneBox(box) { var o = {}; Object.keys(box).forEach(function (k) { o[k] = clonePState(box[k]); }); return o; }
@@ -47,7 +48,13 @@
     var order = orderFor(project);
     if (!order[op.index]) return;
     var st = box[op.pid] || (box[op.pid] = newPState());
-    if (op.status === 'running' && !op.reactive) clearAfter(st, order, op.index);
+    // The previous event ended the tree (its next node was "none"): this event starts a new pass,
+    // so nothing shown from the old pass is current any more.
+    if (st.finished) { st.inst = {}; st.latest = {}; st.lastIndex = -1; }
+    // A node starting, or a (non-reactive) leaf being executed, means everything after it in the
+    // array belongs to an older pass/iteration. The firmware logs leaves only with their result.
+    if (!op.reactive && (op.status === 'running' || op.leaf)) clearAfter(st, order, op.index);
+    st.finished = !!op.ends;
     st.lastIndex = op.index;
     var val = { s: op.status, t: op.seq };
     var k = key(op.ctx, op.nodeId);
@@ -206,8 +213,10 @@
       counters.mismatches += 1;
     }
     seq += 1;
+    var ends = (parsed.status === 'success' && entry.st === -1) || (parsed.status === 'fail' && entry.ft === -1);
     var op = { k: 'ev', pid: project.id, index: parsed.index, status: parsed.status, reactive: !!parsed.reactive,
-      nodeId: entry.nodeId, ctx: entry.ctx, treeId: entry.treeId, seq: seq, time: rec.t, fn: parsed.fn };
+      nodeId: entry.nodeId, ctx: entry.ctx, treeId: entry.treeId, seq: seq, time: rec.t, fn: parsed.fn,
+      leaf: !!(node && M.isLeaf(node.type)), ends: ends };
     applyOp(states, op);
     record(op);
     rec.op = op;

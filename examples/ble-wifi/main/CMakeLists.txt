@@ -2,7 +2,9 @@
 file(GLOB SRC_MAIN "main.c")
 file(GLOB SRC_SRC "src/*.c")
 file(GLOB SRC_BTREE "src/btree_main/*.c")
-file(GLOB SRC_BT "bt/src/*.c")
+# Behavior tree library, used straight from the repository (no local copy)
+set(BTREE_LIB "${CMAKE_CURRENT_LIST_DIR}/../../../btree-lib/btree")
+file(GLOB SRC_BT "${BTREE_LIB}/src/*.c")
 file(GLOB SRC_BUILD "build/btree_main/*.c")
 
 # Registra o componente
@@ -14,5 +16,5 @@ idf_component_register(SRCS ${SRC_MAIN}
                     INCLUDE_DIRS "."
                                  "include"
                                  "include/btree_main"
-                                 "bt/include"
+                                 "${BTREE_LIB}/include"
                                  "build/btree_main")

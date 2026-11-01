@@ -247,9 +247,13 @@
       .catch(function () { clearTimeout(timer); S.backend = null; return null; });
   }
 
+  // Code generation settings kept with the project (studio.json): header, C project, prefix, output folder.
+  var GEN_FIELDS = ['author', 'email', 'version', 'copyright', 'cproject', 'prefix', 'output'];
   function projectMeta(p) {
     var main = p.trees[p.mainTreeId];
-    return { logName: p.logName || '', mainTree: main ? main.name : '', author: p.meta.author || '', email: p.meta.email || '', version: p.meta.version || '' };
+    var meta = { logName: p.logName || '', mainTree: main ? main.name : '' };
+    GEN_FIELDS.forEach(function (k) { meta[k] = p.meta[k] || ''; });
+    return meta;
   }
 
   // Saves to disk (server) when available; always persists to the browser.
@@ -291,7 +295,8 @@
     if (entry.meta && entry.meta.mainTree) imp.mainTreeName = entry.meta.mainTree;
     var p = M.projectFromImport(imp, entry.name);
     p.logName = (entry.meta && entry.meta.logName) || '';
-    p.meta = { onDisk: true, diskName: entry.name, author: entry.meta.author || '', email: entry.meta.email || '', version: entry.meta.version || '' };
+    p.meta = { onDisk: true, diskName: entry.name };
+    GEN_FIELDS.forEach(function (k) { p.meta[k] = (entry.meta && entry.meta[k]) || ''; });
     return p;
   }
 

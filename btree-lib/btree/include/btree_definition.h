@@ -283,9 +283,8 @@ typedef struct btree_definition_config_functions {
                                             _times, _local, _node_limit)       \
   {                                                                            \
     .node_type = BTREE_DEFINITION_NODE_REPEAT, .st_index = _success_target,    \
-    .decorator_node.ties_node.node_limit = _node_limit,                        \
-    .decorator_node.ties_node.times = _times,                                  \
-    .decorator_node.ties_node.local = _local,                                  \
+    .ft_index = _fail_target, .decorator_node.node_limit = _node_limit,        \
+    .decorator_node.times = _times, .decorator_node.index = _local,            \
   }
 
 /**
@@ -402,7 +401,7 @@ typedef struct btree_definition_config_functions {
   {                                                                            \
     .node_type = BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_SUCCESS,    \
     .st_index = _success_target, .ft_index = _fail_target,                     \
-    .decorator_node.ties_node.node_limit = _node_limit,                        \
+    .decorator_node.node_limit = _node_limit,                                  \
   }
 
 /**

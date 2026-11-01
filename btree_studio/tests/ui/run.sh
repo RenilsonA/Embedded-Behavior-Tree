@@ -6,7 +6,7 @@
 set -e
 cd "$(dirname "$0")"
 export PORT=${PORT:-8799}
-for t in e2e explore select dynamics monkey; do
+for t in e2e explore select dynamics passes generate monkey; do
   ws=$(mktemp -d)
   python3 ../../studio.py --port "$PORT" --no-browser --workspace "$ws" >/dev/null 2>&1 &
   pid=$!; sleep 1
