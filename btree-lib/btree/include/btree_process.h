@@ -30,14 +30,11 @@
 #define BTREE_PROCESS_H_
 
 #include "btree_common.h"
-#include "stddef.h"
 
 /**
  * @brief Executes nodes. Each function call is a tick.
  *
- * @param data_tree[in] Data struct of tree.
- * @param index_status_key index in array of status.
- * @param index_status_position position to shift.
+ * @param struct_tree[in] Data struct of tree.
  *
  * @retval BTREE_DEFINITION_STATUS_RUNNING if running tree.
  * @retval BTREE_DEFINITION_STATUS_SUCCESS if successfully executed tree.
@@ -47,8 +44,6 @@
  * @retval BTREE_DEFINITION_STATUS_ERROR if irregular tree.
  */
 btree_definition_status_t
-btree_process_node(btree_definition_tree_data_t *struct_tree,
-                   btree_index_t index_status_key,
-                   uint32_t index_status_position);
+btree_process_node(btree_definition_tree_data_t *struct_tree);
 
 #endif /* BTREE_PROCESS_H_ */

@@ -68,16 +68,6 @@ btree_definition_status_t
 btree_manager_reset_tree(btree_definition_tree_data_t *struct_tree);
 
 /**
- * @brief Function to clear all nodes memory of behavior tree.
- *
- * @param data_tree[in] Pointer to tree struct.
- * @retval BTREE_DEFINITION_STATUS_SUCCESS if successfully executed tree.
- * @retval BTREE_DEFINITION_STATUS_ERROR if irregular tree.
- */
-btree_definition_status_t
-btree_manager_clear_nodes(btree_definition_tree_data_t *struct_tree);
-
-/**
  * @brief Help function to tick tree.
  *
  * @param struct_tree[in] Pointer to tree struct.

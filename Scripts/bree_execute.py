@@ -20,6 +20,7 @@ INDEX_SUCCESS_CASE = 2
 INDEX_FAIL_CASE = 3
 INDEX_POINTER_VERIFY = -1
 INDEX_CLEAN_UNTIL_NODE = -1
+INDEX_REACTIVE = 4
 
 #Node invalid
 NODE_UNRELATED = "BTREE_DEFINITION_TREE_UNRELATED"
@@ -44,6 +45,18 @@ macro_node_reactive_keep_running_until_failure = "BTREE_DEFINITION_CREATE_NODE_R
 macro_node_reactive_force_failure = "BTREE_DEFINITION_CREATE_NODE_REACTIVE_FORCE_FAIL"
 macro_node_reactive_force_success = "BTREE_DEFINITION_CREATE_NODE_REACTIVE_FORCE_SUCCESS"
 macro_node_reactive_inverter = "BTREE_DEFINITION_CREATE_NODE_REACTIVE_INVERTER"
+
+reactive_macro = {
+    macro_node_condition: macro_node_reactive_condition,
+    macro_node_action: macro_node_reactive_action,
+    macro_node_sleep: macro_node_reactive_sleep,
+    macro_node_retry_until_success: macro_node_reactive_retry_until_success,
+    macro_node_repeat: macro_node_reactive_repeat,
+    macro_node_keep_running_until_failure: macro_node_reactive_keep_running_until_failure,
+    macro_node_force_failure: macro_node_reactive_force_failure,
+    macro_node_force_success: macro_node_reactive_force_success,
+    macro_node_inverter: macro_node_reactive_inverter,
+}
 
 #Status of nodes
 status_node = [ 'success', 'fail']
@@ -164,7 +177,6 @@ class BTREE_EXECUTE:
         elif ((self.is_decorator_node(self.tree[node[POSITION_NODE_PARENT]][POSITION_NODE_TYPE]) and (node_status == status_running))):
             self.next_node = node[POSITION_NODE_DECORATOR_TARGET]
             self.tree_status = node_status
-            print(node[POSITION_NODE_TYPE])
             if self.is_decorator_retry_node(node[POSITION_NODE_TYPE]):
                 put = True
                 for i in self.decorator_retry_depth:
@@ -172,7 +184,6 @@ class BTREE_EXECUTE:
                         put = False 
                 if put:
                     self.decorator_retry_depth.append([node[POSITION_NODE_INDEX], 0])
-                print(self.decorator_retry_depth)
         else:
             self.tree_status = status_running
             self.next_node = node[POSITION_NODE_SIBLING]
@@ -182,8 +193,86 @@ class BTREE_EXECUTE:
                     i[1] += 1
         return status_running        
         
+    def is_flat_node(self, node_type):
+        return ((node_type == self.node_condition) or
+                (node_type == self.node_action) or
+                (node_type == self.node_action_sleep) or
+                self.is_decorator_node(node_type))
+
+    def is_reactive_control(self, node_type):
+        return ((node_type == self.node_reactive_sequence) or
+                (node_type == self.node_reactive_fallback))
+
+    def prepare_structure(self, tree):
+        self.parent = {i: tree[i][POSITION_NODE_PARENT] for i in range(1, len(tree))}
+        self.children = {i: [] for i in range(len(tree))}
+        for i in range(1, len(tree)):
+            self.children[self.parent[i]].append(i)
+        self.flat = {}
+        for i in range(len(tree)):
+            if self.is_flat_node(tree[i][POSITION_NODE_TYPE]):
+                self.flat[i] = len(self.flat)
+
+        def first(i):
+            while i not in self.flat:
+                i = self.children[i][0]
+            return self.flat[i]
+
+        def last(i):
+            while self.children[i]:
+                i = self.children[i][-1]
+            return self.flat[i]
+
+        self.node_limit = {i: last(i) for i in self.flat}
+
+        def reactive_start(i):
+            parent = self.parent.get(i)
+            if ((parent is not None) and self.is_reactive_control(tree[parent][POSITION_NODE_TYPE]) and
+                    (self.children[parent][0] != i)):
+                return first(parent)
+            return None
+
+        self.reactive_data = {}
+        for i, flat in self.flat.items():
+            data = (False, NODE_UNRELATED)
+            node = i
+            while node in self.parent:
+                start = reactive_start(node)
+                if start is not None:
+                    entry = first(node)
+                    data = (True, start) if entry == flat else (False, entry)
+                    break
+                node = self.parent[node]
+            self.reactive_data[flat] = data
+
+        def ancestors(i):
+            path = []
+            while i in self.parent:
+                i = self.parent[i]
+                path.append(i)
+            return path
+
+        counters = [i for i in range(len(tree))
+                    if tree[i][POSITION_NODE_TYPE] in (self.node_decorator_retry_until_successful,
+                                                       self.node_decorator_repeat)]
+        self.attempts_slot = {}
+        for i in counters:
+            path_i = ancestors(i)
+            used = set()
+            for j in self.attempts_slot:
+                path_j = ancestors(j)
+                lca = next(a for a in [j] + path_j if a == i or a in path_i)
+                if (lca in (i, j)) or self.is_reactive_control(tree[lca][POSITION_NODE_TYPE]):
+                    used.add(self.attempts_slot[j])
+            slot = 0
+            while slot in used:
+                slot += 1
+            self.attempts_slot[i] = slot
+        self.attempts_size = (max(self.attempts_slot.values()) + 1) if self.attempts_slot else 0
+
     def init_process(self, tree):
         self.tree = tree
+        self.prepare_structure(tree)
         index = 0
         for i in range(len(tree)):
             if((tree[i][POSITION_NODE_TYPE] == self.node_condition) or
@@ -213,45 +302,32 @@ class BTREE_EXECUTE:
                     value.append(tree[self.next_node])
                     if (tree[self.next_node][POSITION_NODE_TYPE] == self.node_root):
                         value[-1] = NODE_UNRELATED
-                if (tree[tree[i][POSITION_NODE_PARENT]][POSITION_NODE_REACTIVE]):
-                    is_reactive = True
-                else:
-                    is_reactive = False
                 if tree[i][POSITION_NODE_TYPE] == self.node_condition:
-                    node_type = macro_node_reactive_condition if is_reactive else macro_node_condition
-                    self.nodes_path.append([index, node_type, value[0], value[1], 
+                    self.nodes_path.append([index, macro_node_condition, value[0], value[1],
                                             tree[i][POSITION_NODE_FUNCTION], tree[i]])
                 elif tree[i][POSITION_NODE_TYPE] == self.node_action:
-                    node_type = macro_node_reactive_action if is_reactive else macro_node_action
-                    self.nodes_path.append([index, node_type, value[0], value[1], 
+                    self.nodes_path.append([index, macro_node_action, value[0], value[1],
                                             tree[i][POSITION_NODE_FUNCTION], tree[i]])
                 elif tree[i][POSITION_NODE_TYPE] == self.node_action_sleep:
-                    node_type = macro_node_reactive_sleep if is_reactive else macro_node_sleep
-                    self.nodes_path.append([index, node_type, value[0], value[1], tree[i][POSITION_NODE_SLEEP], tree[i]])
+                    self.nodes_path.append([index, macro_node_sleep, value[0], value[1],
+                                            tree[i][POSITION_NODE_SLEEP], tree[i]])
                 elif tree[i][POSITION_NODE_TYPE] == self.node_decorator_retry_until_successful:
-                    node_type = macro_node_reactive_retry_until_success if is_reactive else macro_node_retry_until_success
-                    self.nodes_path.append([index, node_type, value[0], value[1], 
-                                            tree[i][POSITION_NODE_DECORATOR_NUM_ATTEMPTS], 
-                                            tree[i][POSITION_NODE_DECORATOR_POINTER],
-                                            tree[i][POSITION_NODE_DECORATOR_RETRY_DEPTH] + index, tree[i]])
+                    self.nodes_path.append([index, macro_node_retry_until_success, value[0], value[1],
+                                            tree[i][POSITION_NODE_DECORATOR_NUM_ATTEMPTS],
+                                            self.attempts_slot[i], self.node_limit[i], tree[i]])
                 elif tree[i][POSITION_NODE_TYPE] == self.node_decorator_repeat:
-                    node_type = macro_node_reactive_repeat if is_reactive else macro_node_repeat
-                    self.nodes_path.append([index, node_type, value[0], value[1], 
-                                            tree[i][POSITION_NODE_DECORATOR_NUM_ATTEMPTS], 
-                                            tree[i][POSITION_NODE_DECORATOR_POINTER], 
-                                            tree[i][POSITION_NODE_DECORATOR_RETRY_DEPTH] + index, tree[i]])
+                    self.nodes_path.append([index, macro_node_repeat, value[0], value[1],
+                                            tree[i][POSITION_NODE_DECORATOR_NUM_ATTEMPTS],
+                                            self.attempts_slot[i], self.node_limit[i], tree[i]])
                 elif tree[i][POSITION_NODE_TYPE] == self.node_decorator_keep_running_until_failure:
-                    node_type = macro_node_reactive_keep_running_until_failure if is_reactive else macro_node_keep_running_until_failure
-                    self.nodes_path.append([index, node_type, value[0], value[1],  tree[i][POSITION_NODE_DECORATOR_RETRY_DEPTH] + index, tree[i]])
+                    self.nodes_path.append([index, macro_node_keep_running_until_failure, value[0], value[1],
+                                            self.node_limit[i], tree[i]])
                 elif tree[i][POSITION_NODE_TYPE] == self.node_decorator_force_failure:
-                    node_type = macro_node_reactive_force_failure if is_reactive else macro_node_force_failure
-                    self.nodes_path.append([index, node_type, value[0], value[1], tree[i]])
+                    self.nodes_path.append([index, macro_node_force_failure, value[0], value[1], tree[i]])
                 elif tree[i][POSITION_NODE_TYPE] == self.node_decorator_force_success:
-                    node_type = macro_node_reactive_force_success if is_reactive else macro_node_force_success
-                    self.nodes_path.append([index, node_type, value[0], value[1], tree[i]])
+                    self.nodes_path.append([index, macro_node_force_success, value[0], value[1], tree[i]])
                 elif tree[i][POSITION_NODE_TYPE] == self.node_decorator_inverter:
-                    node_type = macro_node_reactive_inverter if is_reactive else macro_node_inverter
-                    self.nodes_path.append([index, node_type, value[0], value[1], tree[i]])
+                    self.nodes_path.append([index, macro_node_inverter, value[0], value[1], tree[i]])
                 index += 1
 
         for i in range(len(self.nodes_path)):
@@ -269,5 +345,9 @@ class BTREE_EXECUTE:
 
         for i in self.nodes_path:
             i.pop()
+            is_reactive, reactive_index = self.reactive_data[i[INDEX_OF_POSITION]]
+            if is_reactive:
+                i[INDEX_OF_MACRO] = reactive_macro[i[INDEX_OF_MACRO]]
+            i.insert(INDEX_REACTIVE, reactive_index)
 
         return self.nodes_path

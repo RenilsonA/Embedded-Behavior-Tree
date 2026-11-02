@@ -86,7 +86,7 @@ void btree_common_debug_output(const char *line);
  */
 void btree_common_debug_print(btree_index_t index,
                               btree_definition_status_t status, 
-                              btree_definition_node_type_t node_type, 
+                              uint8_t node_type, 
                               const char *tree_name, const char *const *functions_name);
 #endif
 

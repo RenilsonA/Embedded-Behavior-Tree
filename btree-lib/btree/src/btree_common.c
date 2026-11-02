@@ -42,7 +42,6 @@ static const char *btree_common_array_status_debug[__BTREE_DEFINITION_STATUS_AMO
   [BTREE_DEFINITION_STATUS_RUNNING] = "Running",
   [BTREE_DEFINITION_STATUS_SUCCESS] = "Success",
   [BTREE_DEFINITION_STATUS_FAIL] = "Fail",
-  [BTREE_DEFINITION_STATUS_RE_EXECUTE] = "Re-execute",
   [BTREE_DEFINITION_STATUS_STAND_BY] = "Stand by",
   [BTREE_DEFINITION_STATUS_ERROR] = "Error",
 };
@@ -53,7 +52,7 @@ static const char *btree_common_array_status_debug[__BTREE_DEFINITION_STATUS_AMO
  * @param node_type Type of node.
  * @return const char* Name of node, Unknown otherwise.
  */
-static const char *btree_common_node_type_string(btree_definition_node_type_t node_type)
+static const char *btree_common_node_type_string(uint8_t node_type)
 {
   switch (node_type) {
     case BTREE_DEFINITION_NODE_CONDITION: return "Condition";
@@ -61,7 +60,7 @@ static const char *btree_common_node_type_string(btree_definition_node_type_t no
     case BTREE_DEFINITION_NODE_ACTION_SLEEP: return "Action Sleep";
     case BTREE_DEFINITION_NODE_RETRY_UNTIL_SUCCESS: return "Retry Until Success"; 
     case BTREE_DEFINITION_NODE_REPEAT: return "Repeat";
-    case BTREE_DEFINITION_NODE_KEEP_RUNNING_UNTIL_SUCCESS: return "Keep Running Until Success"; 
+    case BTREE_DEFINITION_NODE_KEEP_RUNNING_UNTIL_FAILURE: return "Keep Running Until Failure"; 
     case BTREE_DEFINITION_NODE_INVERTER: return "Inverter";
     case BTREE_DEFINITION_NODE_FORCE_SUCCESS: return "Force Success";
     case BTREE_DEFINITION_NODE_FORCE_FAIL: return "Force Fail";
@@ -70,7 +69,7 @@ static const char *btree_common_node_type_string(btree_definition_node_type_t no
     case BTREE_DEFINITION_NODE_REACTIVE_ACTION_SLEEP: return "Reactive Action Sleep"; 
     case BTREE_DEFINITION_NODE_REACTIVE_RETRY_UNTIL_SUCCESS: return "Reactive Retry Until Success"; 
     case BTREE_DEFINITION_NODE_REACTIVE_REPEAT: return "Reactive Repeat";
-    case BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_SUCCESS: return "Reactive Keep Running Until Success"; 
+    case BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_FAILURE: return "Reactive Keep Running Until Failure"; 
     case BTREE_DEFINITION_NODE_REACTIVE_INVERTER: return "Reactive Inverter";
     case BTREE_DEFINITION_NODE_REACTIVE_FORCE_SUCCESS: return "Reactive Force Success";
     case BTREE_DEFINITION_NODE_REACTIVE_FORCE_FAIL: return "Reactive Force Fail";
@@ -80,7 +79,7 @@ static const char *btree_common_node_type_string(btree_definition_node_type_t no
 
 void btree_common_debug_print(btree_index_t index,
                               btree_definition_status_t status, 
-                              btree_definition_node_type_t node_type, 
+                              uint8_t node_type, 
                               const char *tree_name, const char *const *functions_name) {
   char line[BTREE_COMMON_DEBUG_LINE_SIZE];
   const char *status_string = "Unknown";
