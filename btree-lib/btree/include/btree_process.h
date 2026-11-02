@@ -43,7 +43,6 @@
  * @retval BTREE_DEFINITION_STATUS_STAND_BY if successfully executed tree.
  * @retval BTREE_DEFINITION_STATUS_ERROR if irregular tree.
  */
-btree_definition_status_t
-btree_process_node(btree_definition_tree_data_t *struct_tree);
+btree_definition_status_t btree_process_node(btree_definition_tree_data_t *struct_tree);
 
 #endif /* BTREE_PROCESS_H_ */

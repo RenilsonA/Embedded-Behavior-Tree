@@ -14,14 +14,14 @@ static bool delivery_finished = false;
 
 static btree_definition_status_t on_running(btree_definition_tree_data_t *tree)
 {
-    (void)tree;
+    (void) tree;
     return BTREE_DEFINITION_STATUS_RUNNING;
 }
 
 static btree_definition_status_t on_stand_by(btree_definition_tree_data_t *tree)
 {
-    (void)tree;
-    (void)btree_common_delay_ms(STAND_BY_WAIT_MS);
+    (void) tree;
+    (void) btree_common_delay_ms(STAND_BY_WAIT_MS);
     return BTREE_DEFINITION_STATUS_STAND_BY;
 }
 
@@ -43,10 +43,10 @@ static btree_definition_status_t on_fail(btree_definition_tree_data_t *tree)
 
 static btree_definition_config_functions_t callbacks = {
     .function_tick = btree_manager_tick_tree,
-    .running_case = on_running,
-    .success_case = on_success,
-    .fail_case = on_fail,
-    .standby_case = on_stand_by,
+    .running_case  = on_running,
+    .success_case  = on_success,
+    .fail_case     = on_fail,
+    .standby_case  = on_stand_by,
 };
 
 int main(int argc, char **argv)
@@ -54,8 +54,9 @@ int main(int argc, char **argv)
     int delivery;
     unsigned long tick_ms = (argc > 1) ? strtoul(argv[1], NULL, 10) : 0ul;
 
-    /* Line buffered even through a pipe, so each [BTREE] line reaches the Studio at once. */
-    (void)setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+    /* Line buffered even through a pipe, so each [BTREE] line reaches the Studio at once.
+     */
+    (void) setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
 
     for (delivery = 1; delivery <= 3; delivery++) {
         int ticks = 0;
@@ -64,16 +65,16 @@ int main(int argc, char **argv)
 
         printf("\n=== delivery %d ===\n", delivery);
         delivery_finished = false;
-        
+
         while (!delivery_finished && (ticks < MAX_TICKS_PER_DELIVERY)) {
             btree_manager_tick(&btree_robot_control, &callbacks);
             ticks++;
             if (tick_ms > 0ul) {
-                (void)btree_common_delay_ms((uint32_t)tick_ms);
+                (void) btree_common_delay_ms((uint32_t) tick_ms);
             }
         }
     }
 
-    printf("\npackages delivered: %u\n", (unsigned)btree_robot_data.delivered);
+    printf("\npackages delivered: %u\n", (unsigned) btree_robot_data.delivered);
     return 0;
 }

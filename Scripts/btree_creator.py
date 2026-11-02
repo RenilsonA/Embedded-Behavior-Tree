@@ -1,6 +1,5 @@
 import os
 import re
-import math
 from datetime import date
 
 NODE_UNRELATED = "BTREE_DEFINITION_TREE_UNRELATED"
@@ -18,6 +17,7 @@ class ARCHIVE_CREATOR:
         self.func_commented = []
         self.func_empty = []
         self.attempts_value_max = 0
+        self.attempts_size = 0
 
     def set_text(self, name = None, email = None, version = None, copyrights = None, project = None, prefix = None):
         self.name = name if name != None else input("Put your name:")
@@ -232,8 +232,11 @@ class ARCHIVE_CREATOR:
         self.text         += "    .last_node_state = BTREE_DEFINITION_STATUS_RUNNING,\n"
         self.text         += "    .node_index      = BTREE_DEFINITION_NODE_FIRST_INDEX,\n"
         self.text         += f"    .tree_size       = {self.prefix.upper()}BTREE_{self.project.upper()}ARRAY_SIZE,\n"
-        self.text         += f"    .nodes_status    = {self.prefix.lower()}btree_{self.project.lower()}status_nodes,\n"
-        self.text         += f"    .array_attempts  = {self.prefix.lower()}btree_{self.project.lower()}common_attempts,\n"
+        self.text         += "    .tick_index      = BTREE_DEFINITION_TREE_UNRELATED,\n"
+        if self.attempts_size > 0:
+            self.text     += f"    .array_attempts  = {self.prefix.lower()}btree_{self.project.lower()}common_attempts,\n"
+        else:
+            self.text     += "    .array_attempts  = NULL,\n"
         self.text         += f"    .tree            = {self.prefix.lower()}btree_{self.project.lower()}array,\n"
         self.text         += f"#if BTREE_COMMON_DEBUG\n"
         self.text         += f"    .debug           = &btree_{self.project.lower()}debug_item,\n"
@@ -328,44 +331,33 @@ class ARCHIVE_CREATOR:
         #    file.write(self.text)
         #self.text = ""
 
-    def generate_common_inc(self, max_ramification_attempts, tree_size):
+    def generate_common_inc(self, max_ramification_attempts):
         self.archive_header("common")
         self.archive_top("common")
-        self.text += "/**\n"
-        self.text += " * @brief Size of array nodes status.\n"
-        self.text += " *\n */\n"
-        self.text += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}COMMON_STATUS_NODES_SIZE (btree_index_t) {math.ceil((tree_size / 16))}\n\n"
-        self.text += "/**\n"
-        self.text += f" * @brief Number of fields needed in the worst case scenario of tree {self.project[:-1].lower()} attempted fields.\n"
-        self.text += " * At least 1: ISO C does not allow zero-length arrays.\n"
-        self.text += " *\n */\n"
-        self.text += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE {max(1, max_ramification_attempts)}\n\n"
-        self.text += "/**\n"
-        self.text += f" * @brief Externalize array of tree {self.project[:-1].lower()} attemps.\n"
-        self.text += " *\n */\n"
-        self.text += f"extern uint32_t {self.prefix.lower()}btree_{self.project.lower()}status_nodes[{self.prefix.upper()}BTREE_{self.project.upper()}COMMON_STATUS_NODES_SIZE];\n\n"
-        self.text += "/**\n"
-        self.text += f" * @brief Externalize array of tree {self.project[:-1].lower()} attemps.\n"
-        self.text += " *\n */\n"
-        self.text += f"extern uint32_t {self.prefix.lower()}btree_{self.project.lower()}common_attempts[{self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE];\n\n"
+        if max_ramification_attempts > 0:
+            self.text += "/**\n"
+            self.text += f" * @brief Number of counters used by the retry and repeat nodes of tree {self.project[:-1].lower()}.\n"
+            self.text += " *\n */\n"
+            self.text += f"#define {self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE {max_ramification_attempts}\n\n"
+            self.text += "/**\n"
+            self.text += f" * @brief Externalize array of tree {self.project[:-1].lower()} attempts.\n"
+            self.text += " *\n */\n"
+            self.text += f"extern btree_definition_attempts_t {self.prefix.lower()}btree_{self.project.lower()}common_attempts[{self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE];\n\n"
         self.archive_end("common")
 
-    def generate_common_src(self):
+    def generate_common_src(self, max_ramification_attempts):
         self.archive_header("common", src_file=True)
         self.archive_top("common", src_file=True)
-        self.text += "/**\n"
-        self.text += " * @brief Nodes states. Each value, carry 16 nodes status. Each node status is 2 bits.\n"
-        self.text += " *\n */\n"
-        self.text += f"uint32_t {self.prefix.lower()}btree_{self.project.lower()}status_nodes[{self.prefix.upper()}BTREE_{self.project.upper()}COMMON_STATUS_NODES_SIZE] = {{0}};\n\n"
-        self.text += "/**\n"
-        self.text += " * @brief Fields to input tries or attempts.\n"
-        self.text += " *\n */\n"
-        self.text += f"uint32_t {self.prefix.lower()}btree_{self.project.lower()}common_attempts[{self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE] = {{0}};\n\n"
+        if max_ramification_attempts > 0:
+            self.text += "/**\n"
+            self.text += " * @brief Fields to input tries or attempts.\n"
+            self.text += " *\n */\n"
+            self.text += f"btree_definition_attempts_t {self.prefix.lower()}btree_{self.project.lower()}common_attempts[{self.prefix.upper()}BTREE_{self.project.upper()}COMMON_ATTEMPTS_SIZE] = {{0}};\n\n"
         self.archive_end("common", src=True)
 
-    def generate_common(self, num_max_attempts, tree_size):
-        self.generate_common_inc(num_max_attempts, tree_size)
-        self.generate_common_src()
+    def generate_common(self, num_max_attempts):
+        self.generate_common_inc(num_max_attempts)
+        self.generate_common_src(num_max_attempts)
 
     def generate_archive_tree(self, archive, functions):
         self.create_inc(archive, functions)
@@ -382,6 +374,7 @@ class ARCHIVE_CREATOR:
             self.output = output
         for i in range(len(functions)):
             self.generate_archive_tree(archives[i], functions[i])
-        self.generate_common(attempts_max, tree_size)
+        self.attempts_size = attempts_max
+        self.generate_common(attempts_max)
         self.generate_blackboard()
         self.generate_tree_array(archives, text, tree_size)

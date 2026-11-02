@@ -1,8 +1,8 @@
 #ifndef MQTT_H_
 #define MQTT_H_
 
-#include "mqtt_client.h"
 #include "esp_netif_types.h"
+#include "mqtt_client.h"
 #include "sys/param.h"
 
 /**

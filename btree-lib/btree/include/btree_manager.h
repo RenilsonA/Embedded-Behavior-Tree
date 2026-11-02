@@ -41,8 +41,8 @@
  * @retval BTREE_DEFINITION_STATUS_STAND_BY if successfully executed tree.
  * @retval BTREE_DEFINITION_STATUS_ERROR if irregular tree.
  */
-btree_definition_status_t
-btree_manager_tick_tree(btree_definition_tree_data_t *struct_tree);
+btree_definition_status_t btree_manager_tick_tree(
+    btree_definition_tree_data_t *struct_tree);
 
 /**
  * @brief Function to execute tree with reactivity.
@@ -54,8 +54,8 @@ btree_manager_tick_tree(btree_definition_tree_data_t *struct_tree);
  * @retval BTREE_DEFINITION_STATUS_STAND_BY if successfully executed tree.
  * @retval BTREE_DEFINITION_STATUS_ERROR if irregular tree.
  */
-btree_definition_status_t
-btree_manager_reactivity_tick_tree(btree_definition_tree_data_t *struct_tree);
+btree_definition_status_t btree_manager_reactivity_tick_tree(
+    btree_definition_tree_data_t *struct_tree);
 
 /**
  * @brief Function to reset behavior tree.
@@ -64,8 +64,8 @@ btree_manager_reactivity_tick_tree(btree_definition_tree_data_t *struct_tree);
  * @retval BTREE_DEFINITION_STATUS_SUCCESS if successfully executed tree.
  * @retval BTREE_DEFINITION_STATUS_ERROR if irregular tree.
  */
-btree_definition_status_t
-btree_manager_reset_tree(btree_definition_tree_data_t *struct_tree);
+btree_definition_status_t btree_manager_reset_tree(
+    btree_definition_tree_data_t *struct_tree);
 
 /**
  * @brief Help function to tick tree.
@@ -78,8 +78,8 @@ btree_manager_reset_tree(btree_definition_tree_data_t *struct_tree);
  * @retval BTREE_DEFINITION_STATUS_STAND_BY if successfully executed tree.
  * @retval BTREE_DEFINITION_STATUS_ERROR if irregular tree.
  */
-btree_definition_status_t
-btree_manager_tick(btree_definition_tree_data_t *struct_tree,
-                   btree_definition_config_functions_t *functions_case);
+btree_definition_status_t btree_manager_tick(
+    btree_definition_tree_data_t *struct_tree,
+    btree_definition_config_functions_t *functions_case);
 
 #endif /* BTREE_MANAGER_H_ */

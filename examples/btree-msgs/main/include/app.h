@@ -3,7 +3,7 @@
 
 /**
  * @brief Set the bool tick object.
- * 
+ *
  */
 void set_bool_tick(void);
 

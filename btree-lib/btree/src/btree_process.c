@@ -45,7 +45,7 @@ btree_definition_status_t btree_process_node(btree_definition_tree_data_t *struc
     uint8_t node_type                          = node_struct->node_type;
     btree_definition_status_t status           = BTREE_DEFINITION_STATUS_ERROR;
     btree_definition_attempts_t *attempts      = NULL;
-    btree_definition_status_t child_status = struct_tree->last_node_state;
+    btree_definition_status_t child_status     = struct_tree->last_node_state;
     uint8_t enter_child = (child_status == BTREE_DEFINITION_STATUS_RUNNING);
 
     switch (node_type) {
@@ -62,7 +62,8 @@ btree_definition_status_t btree_process_node(btree_definition_tree_data_t *struc
     case BTREE_DEFINITION_NODE_REACTIVE_ACTION_SLEEP: {
         enter_child = 0;
         status      = btree_common_delay_ms(node_struct->interaction_node.timeout_ms);
-        status      = (status == 0) ? BTREE_DEFINITION_STATUS_SUCCESS : BTREE_DEFINITION_STATUS_FAIL;
+        status      = (status == 0) ? BTREE_DEFINITION_STATUS_SUCCESS
+                                    : BTREE_DEFINITION_STATUS_FAIL;
         break;
     }
 
@@ -100,7 +101,13 @@ btree_definition_status_t btree_process_node(btree_definition_tree_data_t *struc
 
     case BTREE_DEFINITION_NODE_KEEP_RUNNING_UNTIL_FAILURE:
     case BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_FAILURE: {
-        enter_child |= (child_status == BTREE_DEFINITION_STATUS_SUCCESS);
+        if (child_status == BTREE_DEFINITION_STATUS_SUCCESS) {
+            struct_tree->node_index      = index + 1;
+            struct_tree->last_node_state = BTREE_DEFINITION_STATUS_STAND_BY;
+            BTREE_DEBUG_PRINT(index, BTREE_DEFINITION_STATUS_RUNNING, node_type,
+                              struct_tree->debug);
+            return BTREE_DEFINITION_STATUS_STAND_BY;
+        }
         status = child_status;
         break;
     }
@@ -133,7 +140,8 @@ btree_definition_status_t btree_process_node(btree_definition_tree_data_t *struc
     if (enter_child) {
         struct_tree->node_index      = index + 1;
         struct_tree->last_node_state = BTREE_DEFINITION_STATUS_RUNNING;
-        BTREE_DEBUG_PRINT(index, BTREE_DEFINITION_STATUS_RUNNING, node_type, struct_tree->debug);
+        BTREE_DEBUG_PRINT(index, BTREE_DEFINITION_STATUS_RUNNING, node_type,
+                          struct_tree->debug);
         return BTREE_DEFINITION_STATUS_RUNNING;
     }
 

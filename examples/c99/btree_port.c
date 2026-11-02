@@ -6,9 +6,9 @@
 int btree_common_delay_ms(uint32_t timeout_ms)
 {
     clock_t start = clock();
-    clock_t ticks = (clock_t)(((double)timeout_ms * CLOCKS_PER_SEC) / 1000.0);
+    clock_t ticks = (clock_t) (((double) timeout_ms * CLOCKS_PER_SEC) / 1000.0);
 
-    if (start == (clock_t)-1) {
+    if (start == (clock_t) -1) {
         return -1;
     }
     while ((clock() - start) < ticks) {

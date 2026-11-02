@@ -241,6 +241,7 @@ class BTREE_ARRAY:
                 tree_remodeled = x.init_process(self.tree)
                 text = self.library.tree_vector(self.tree_id, tree_remodeled)
                 self.tree_remodeled_size = len(tree_remodeled)
+                self.attempts_blocks = x.attempts_size
                 self.tree.clear()
                 self.texts.append(text)
 
@@ -261,7 +262,6 @@ class BTREE_ARRAY:
         self.archive = archive if archive != None else input("Put archive archive:")
         self.main_tree = main_tree if main_tree != None else input("Put your main tree:")
         self.load_archive()
-        #For reactivity, use self.attempts_blocks, if not, use self.attempts_max.
         self.library.attempts_value_max = self.attempts_value_max
         self.library.generate_archives(self.archives, self.texts, self.functions, self.attempts_blocks, self.tree_remodeled_size, output)
         # Keep the source tree next to the generated array: <output>/tools/btree_<project>/<archive>.xml

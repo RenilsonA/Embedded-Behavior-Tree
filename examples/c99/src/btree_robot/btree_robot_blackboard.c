@@ -9,12 +9,13 @@
  *
  */
 
-#include "string.h"
 #include "btree_robot_blackboard.h"
+
+#include "string.h"
 
 /**
  * @brief Tree structure with relevant blackboard data robot.
- * 
+ *
  */
 struct btree_robot_blackboard btree_robot_data = {
     .battery_percent = 15,

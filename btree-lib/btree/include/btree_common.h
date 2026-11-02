@@ -42,22 +42,25 @@
 #endif
 
 /**
- * @brief Macro used call debug. Define BTREE_COMMON_DEBUG with a non-zero value in the project to enable debug.
- * 
+ * @brief Macro used call debug. Define BTREE_COMMON_DEBUG with a non-zero value in the
+ * project to enable debug.
+ *
  */
 #if BTREE_COMMON_DEBUG
-#define BTREE_DEBUG_PRINT(_index, _status, _type, _debug) \
-    do { \
-        if (_debug) { \
-            btree_common_debug_print(_index, _status, _type, _debug->tree_name, _debug->functions_name); \
-        } \
-    } while(0)
+#define BTREE_DEBUG_PRINT(_index, _status, _type, _debug)                       \
+    do {                                                                        \
+        if (_debug) {                                                           \
+            btree_common_debug_print(_index, _status, _type, _debug->tree_name, \
+                                     _debug->functions_name);                   \
+        }                                                                       \
+    } while (0)
 #else
-#define BTREE_DEBUG_PRINT(_index, _status, _type, _debug) ((void)0)
+#define BTREE_DEBUG_PRINT(_index, _status, _type, _debug) ((void) 0)
 #endif
 
 /**
- * @brief Function for delay within the behavior tree. Its implementation is platform-dependent and should be provided by the user.
+ * @brief Function for delay within the behavior tree. Its implementation is
+ * platform-dependent and should be provided by the user.
  *
  * @param timeout_ms Wait timeout value in milliseconds.
  * @retval 0 if successful (the Sleep node returns SUCCESS).
@@ -68,7 +71,8 @@ int btree_common_delay_ms(uint32_t timeout_ms);
 #if BTREE_COMMON_DEBUG
 
 /**
- * @brief Function for debug. Its implementation is platform-dependent and should be provided by the user. Called by btree_common_debug_print.
+ * @brief Function for debug. Its implementation is platform-dependent and should be
+ * provided by the user. Called by btree_common_debug_print.
  *
  * @param line[in] Null-terminated line, already ending with '\n'.
  */
@@ -84,10 +88,9 @@ void btree_common_debug_output(const char *line);
  * @param tree_name[in] Name of tree.
  * @param functions_name[in] Array of functions names.
  */
-void btree_common_debug_print(btree_index_t index,
-                              btree_definition_status_t status, 
-                              uint8_t node_type, 
-                              const char *tree_name, const char *const *functions_name);
+void btree_common_debug_print(btree_index_t index, btree_definition_status_t status,
+                              uint8_t node_type, const char *tree_name,
+                              const char *const *functions_name);
 #endif
 
 #endif /* BTREE_COMMON_H_ */

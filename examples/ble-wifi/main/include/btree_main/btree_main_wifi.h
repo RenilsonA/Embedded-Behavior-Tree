@@ -13,91 +13,91 @@
 #include "btree_main_blackboard.h"
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ */
 btree_definition_status_t btree_main_wifi_is_connected(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ */
 btree_definition_status_t btree_main_wifi_is_fail(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_wifi_ping(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_wifi_wifi_init(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_wifi_wifi_register(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_wifi_wifi_connect(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_wifi_clear_credentials(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_wifi_wifi_disconnect(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_wifi_wifi_unregister(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_wifi_wifi_deinit(void);
 
 #endif /* BTREE_MAIN_WIFI_H_ */

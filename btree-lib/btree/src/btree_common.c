@@ -36,77 +36,96 @@
 
 /**
  * @brief Array of status to debug.
- * 
+ *
  */
 static const char *btree_common_array_status_debug[__BTREE_DEFINITION_STATUS_AMOUNT] = {
-  [BTREE_DEFINITION_STATUS_RUNNING] = "Running",
-  [BTREE_DEFINITION_STATUS_SUCCESS] = "Success",
-  [BTREE_DEFINITION_STATUS_FAIL] = "Fail",
-  [BTREE_DEFINITION_STATUS_STAND_BY] = "Stand by",
-  [BTREE_DEFINITION_STATUS_ERROR] = "Error",
+    [BTREE_DEFINITION_STATUS_RUNNING]  = "Running",
+    [BTREE_DEFINITION_STATUS_SUCCESS]  = "Success",
+    [BTREE_DEFINITION_STATUS_FAIL]     = "Fail",
+    [BTREE_DEFINITION_STATUS_STAND_BY] = "Stand by",
+    [BTREE_DEFINITION_STATUS_ERROR]    = "Error",
 };
 
 /**
  * @brief Strings of nodes types.
- * 
+ *
  * @param node_type Type of node.
  * @return const char* Name of node, Unknown otherwise.
  */
 static const char *btree_common_node_type_string(uint8_t node_type)
 {
-  switch (node_type) {
-    case BTREE_DEFINITION_NODE_CONDITION: return "Condition";
-    case BTREE_DEFINITION_NODE_ACTION: return "Action";
-    case BTREE_DEFINITION_NODE_ACTION_SLEEP: return "Action Sleep";
-    case BTREE_DEFINITION_NODE_RETRY_UNTIL_SUCCESS: return "Retry Until Success"; 
-    case BTREE_DEFINITION_NODE_REPEAT: return "Repeat";
-    case BTREE_DEFINITION_NODE_KEEP_RUNNING_UNTIL_FAILURE: return "Keep Running Until Failure"; 
-    case BTREE_DEFINITION_NODE_INVERTER: return "Inverter";
-    case BTREE_DEFINITION_NODE_FORCE_SUCCESS: return "Force Success";
-    case BTREE_DEFINITION_NODE_FORCE_FAIL: return "Force Fail";
-    case BTREE_DEFINITION_NODE_REACTIVE_CONDITION: return "Reactive Condition";
-    case BTREE_DEFINITION_NODE_REACTIVE_ACTION: return "Reactive Action";
-    case BTREE_DEFINITION_NODE_REACTIVE_ACTION_SLEEP: return "Reactive Action Sleep"; 
-    case BTREE_DEFINITION_NODE_REACTIVE_RETRY_UNTIL_SUCCESS: return "Reactive Retry Until Success"; 
-    case BTREE_DEFINITION_NODE_REACTIVE_REPEAT: return "Reactive Repeat";
-    case BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_FAILURE: return "Reactive Keep Running Until Failure"; 
-    case BTREE_DEFINITION_NODE_REACTIVE_INVERTER: return "Reactive Inverter";
-    case BTREE_DEFINITION_NODE_REACTIVE_FORCE_SUCCESS: return "Reactive Force Success";
-    case BTREE_DEFINITION_NODE_REACTIVE_FORCE_FAIL: return "Reactive Force Fail";
-    default: return "Unknown";
-  }
+    switch (node_type) {
+    case BTREE_DEFINITION_NODE_CONDITION:
+        return "Condition";
+    case BTREE_DEFINITION_NODE_ACTION:
+        return "Action";
+    case BTREE_DEFINITION_NODE_ACTION_SLEEP:
+        return "Action Sleep";
+    case BTREE_DEFINITION_NODE_RETRY_UNTIL_SUCCESS:
+        return "Retry Until Success";
+    case BTREE_DEFINITION_NODE_REPEAT:
+        return "Repeat";
+    case BTREE_DEFINITION_NODE_KEEP_RUNNING_UNTIL_FAILURE:
+        return "Keep Running Until Failure";
+    case BTREE_DEFINITION_NODE_INVERTER:
+        return "Inverter";
+    case BTREE_DEFINITION_NODE_FORCE_SUCCESS:
+        return "Force Success";
+    case BTREE_DEFINITION_NODE_FORCE_FAIL:
+        return "Force Fail";
+    case BTREE_DEFINITION_NODE_REACTIVE_CONDITION:
+        return "Reactive Condition";
+    case BTREE_DEFINITION_NODE_REACTIVE_ACTION:
+        return "Reactive Action";
+    case BTREE_DEFINITION_NODE_REACTIVE_ACTION_SLEEP:
+        return "Reactive Action Sleep";
+    case BTREE_DEFINITION_NODE_REACTIVE_RETRY_UNTIL_SUCCESS:
+        return "Reactive Retry Until Success";
+    case BTREE_DEFINITION_NODE_REACTIVE_REPEAT:
+        return "Reactive Repeat";
+    case BTREE_DEFINITION_NODE_REACTIVE_KEEP_RUNNING_UNTIL_FAILURE:
+        return "Reactive Keep Running Until Failure";
+    case BTREE_DEFINITION_NODE_REACTIVE_INVERTER:
+        return "Reactive Inverter";
+    case BTREE_DEFINITION_NODE_REACTIVE_FORCE_SUCCESS:
+        return "Reactive Force Success";
+    case BTREE_DEFINITION_NODE_REACTIVE_FORCE_FAIL:
+        return "Reactive Force Fail";
+    default:
+        return "Unknown";
+    }
 }
 
-void btree_common_debug_print(btree_index_t index,
-                              btree_definition_status_t status, 
-                              uint8_t node_type, 
-                              const char *tree_name, const char *const *functions_name) {
-  char line[BTREE_COMMON_DEBUG_LINE_SIZE];
-  const char *status_string = "Unknown";
-  const char *function_name = NULL;
-  int length = 0;
+void btree_common_debug_print(btree_index_t index, btree_definition_status_t status,
+                              uint8_t node_type, const char *tree_name,
+                              const char *const *functions_name)
+{
+    char line[BTREE_COMMON_DEBUG_LINE_SIZE];
+    const char *status_string = "Unknown";
+    const char *function_name = NULL;
+    int length                = 0;
 
-  if ((unsigned)status < (unsigned)__BTREE_DEFINITION_STATUS_AMOUNT) {
-    status_string = btree_common_array_status_debug[status];
-  }
+    if ((unsigned) status < (unsigned) __BTREE_DEFINITION_STATUS_AMOUNT) {
+        status_string = btree_common_array_status_debug[status];
+    }
 
-  if ((functions_name) && (functions_name[index]) && (functions_name[index][0] != '\0')) {
-    function_name = functions_name[index];
-  }
+    if ((functions_name) && (functions_name[index])
+        && (functions_name[index][0] != '\0')) {
+        function_name = functions_name[index];
+    }
 
-  length = snprintf(line, sizeof(line),
-                    "[BTREE] | Tree: %s | Node: %d | Status: %s | Type: %s%s%s\n",
-                    tree_name ? tree_name : "Unknown", (int)index, status_string,
-                    btree_common_node_type_string(node_type),
-                    function_name ? " | Function: " : "",
-                    function_name ? function_name : "");
-  if (length < 0) {
-    return;
-  }
-  if ((size_t)length >= sizeof(line)) {
-    line[sizeof(line) - 2] = '\n';
-  }
+    length = snprintf(
+        line, sizeof(line), "[BTREE] | Tree: %s | Node: %d | Status: %s | Type: %s%s%s\n",
+        tree_name ? tree_name : "Unknown", (int) index, status_string,
+        btree_common_node_type_string(node_type), function_name ? " | Function: " : "",
+        function_name ? function_name : "");
+    if (length < 0) {
+        return;
+    }
+    if ((size_t) length >= sizeof(line)) {
+        line[sizeof(line) - 2] = '\n';
+    }
 
-  btree_common_debug_output(line);
+    btree_common_debug_output(line);
 }
 #endif

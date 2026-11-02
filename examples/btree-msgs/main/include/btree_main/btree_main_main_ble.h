@@ -13,46 +13,46 @@
 #include "btree_main_blackboard.h"
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ */
 btree_definition_status_t btree_main_main_ble_not_recv_blinky_msg(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_main_ble_blynk_led(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_main_ble_just_standby(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ */
 btree_definition_status_t btree_main_main_ble_is_not_recv_echo_msg(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_main_ble_print_msg(void);
 
 #endif /* BTREE_MAIN_MAIN_BLE_H_ */

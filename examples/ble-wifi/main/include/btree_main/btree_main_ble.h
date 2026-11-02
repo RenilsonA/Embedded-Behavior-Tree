@@ -13,64 +13,64 @@
 #include "btree_main_blackboard.h"
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ */
 btree_definition_status_t btree_main_ble_have_credentials(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ */
 btree_definition_status_t btree_main_ble_bluetooth_has_started(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_ble_ble_deinit(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_ble_ble_unregister(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_ble_ble_disconnect(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_ble_ble_init(void);
 
 /**
-* @brief 
-*
-* @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
-* @retval BTREE_DEFINITION_STATUS_FAIL case fail;
-* @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
-*/
+ * @brief
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case fail;
+ * @retval BTREE_DEFINITION_STATUS_STAND_BY case waiting for something;
+ */
 btree_definition_status_t btree_main_ble_ble_register(void);
 
 #endif /* BTREE_MAIN_BLE_H_ */
