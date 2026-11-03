@@ -3,7 +3,7 @@
  * @author Renilson Almeida (joserenilson.silva@edge.ufal.br)
  * @brief Header of interface of array tree.
  * @version 1.0
- * @date 18/05/2025
+ * @date 02/11/2026
  *
  */
 
@@ -17,6 +17,30 @@
  *
  */
 #define BTREE_MAIN_ARRAY_SIZE 240
+
+/**
+ * @brief Smallest BTREE_DEFINITION_SIZE that holds the main tree.
+ * The library is built with a single BTREE_DEFINITION_SIZE: use the largest
+ * value among all the trees of the firmware.
+ *
+ */
+#define BTREE_MAIN_INDEX_SIZE 8
+
+#if BTREE_DEFINITION_SIZE < BTREE_MAIN_INDEX_SIZE
+#error "The main tree has 240 nodes: build with BTREE_DEFINITION_SIZE=8 or more."
+#endif
+
+/**
+ * @brief Smallest BTREE_DEFINITION_ATTEMPTS_SIZE that holds the counters of the main tree.
+ * The library is built with a single BTREE_DEFINITION_ATTEMPTS_SIZE: use the
+ * largest value among all the trees of the firmware.
+ *
+ */
+#define BTREE_MAIN_ATTEMPTS_SIZE 8
+
+#if BTREE_DEFINITION_ATTEMPTS_SIZE < BTREE_MAIN_ATTEMPTS_SIZE
+#error "The main tree has a retry/repeat of 0: build with BTREE_DEFINITION_ATTEMPTS_SIZE=8 or more."
+#endif
 
 /**
  * @brief Array containing the nodes of the main tree.

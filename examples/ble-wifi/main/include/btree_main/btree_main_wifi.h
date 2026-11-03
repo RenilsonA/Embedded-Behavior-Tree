@@ -74,6 +74,14 @@ btree_definition_status_t btree_main_wifi_wifi_connect(void);
 btree_definition_status_t btree_main_wifi_clear_credentials(void);
 
 /**
+ * @brief Check if there are WiFi credentials (same check of the BLE tree).
+ *
+ * @retval BTREE_DEFINITION_STATUS_SUCCESS case there are credentials;
+ * @retval BTREE_DEFINITION_STATUS_FAIL case there are no credentials;
+ */
+btree_definition_status_t btree_main_wifi_have_credentials(void);
+
+/**
  * @brief
  *
  * @retval BTREE_DEFINITION_STATUS_SUCCESS case success;

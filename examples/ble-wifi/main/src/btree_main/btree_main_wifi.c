@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "app.h"
+#include "btree_main_ble.h"
 #include "esp_event.h"
 #include "esp_netif_ip_addr.h"
 #include "esp_system.h"
@@ -213,6 +214,11 @@ btree_definition_status_t btree_main_wifi_wifi_connect(void)
     esp_wifi_connect();
 
     return BTREE_DEFINITION_STATUS_SUCCESS;
+}
+
+btree_definition_status_t btree_main_wifi_have_credentials(void)
+{
+    return btree_main_ble_have_credentials();
 }
 
 btree_definition_status_t btree_main_wifi_clear_credentials(void)
